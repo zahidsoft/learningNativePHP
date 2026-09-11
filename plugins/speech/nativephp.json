@@ -1,0 +1,73 @@
+{
+    "name": "nativephp/plugin-speech",
+    "version": "1.0.0",
+    "description": "A NativePHP Mobile plugin",
+    "namespace": "Speech",
+    "keywords": [],
+    "category": "utilities",
+    "license": "MIT",
+    "pricing": {
+        "type": "free"
+    },
+    "author": {
+        "name": "Your Name",
+        "email": "you@example.com",
+        "url": ""
+    },
+    "homepage": "",
+    "repository": "",
+    "funding": [],
+    "platforms": [
+        "android",
+        "ios"
+    ],
+    "icon": "resources/icon.png",
+    "screenshots": [],
+    "bridge_functions": [
+        {
+            "name": "Speech.Speak",
+            "android": "com.nativephp.plugins.speech.SpeechFunctions.Speak",
+            "ios": "SpeechFunctions.Speak",
+            "description": "Speak text aloud using the device's native text-to-speech engine"
+        },
+        {
+            "name": "Speech.Stop",
+            "android": "com.nativephp.plugins.speech.SpeechFunctions.Stop",
+            "ios": "SpeechFunctions.Stop",
+            "description": "Stop any speech currently playing"
+        }
+    ],
+    "android": {
+        "min_version": 21,
+        "permissions": [],
+        "repositories": [],
+        "dependencies": {
+            "implementation": []
+        },
+        "activities": [],
+        "services": [],
+        "receivers": [],
+        "providers": []
+    },
+    "ios": {
+        "min_version": "15.0",
+        "permissions": [],
+        "repositories": [],
+        "dependencies": {
+            "swift_packages": [],
+            "pods": []
+        }
+    },
+    "assets": {
+        "android": [],
+        "ios": []
+    },
+    "secrets": [],
+    "events": [
+        "Nativephp\\Speech\\Events\\SpeechCompleted"
+    ],
+    "service_provider": "Nativephp\\Speech\\SpeechServiceProvider",
+    "hooks": {
+        "copy_assets": "nativephp:speech:copy-assets"
+    }
+}

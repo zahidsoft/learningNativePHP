@@ -1,391 +1,1793 @@
-import { Head, Link, usePage } from "@inertiajs/react";
-import { dashboard, login } from "@/routes";
-import { register } from "@/routes";
+import { Head } from '@inertiajs/react';
+import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+type Letter = { ch: string; name: string; word?: string };
+type CatId = 'english' | 'arabic' | 'numbers' | 'consonants' | 'vowels';
+type Cat = {
+    id: CatId;
+    title: string;
+    sub: string;
+    bg: string;
+    soft: string;
+    lang: string;
+    letters: Letter[];
+};
+
+const PAL = ['#ee2f5a', '#1f7ae0', '#f9a11b', '#3aa93a', '#8b3ff0', '#d62b74'];
+
+const p = (s: string, fallback = ''): Letter[] =>
+    s.split('|').map((row) => {
+        const b = row.split(':');
+        return { ch: b[0], name: b[1], word: b[2] || fallback };
+    });
+
+const CATS: Record<CatId, Cat> = {
+    english: {
+        id: 'english',
+        title: 'English Letters',
+        sub: 'abc · A to Z',
+        bg: '#1f7ae0',
+        soft: '#e8f3ff',
+        lang: 'en-US',
+        letters: p(
+            'A:Ay:Apple|B:Bee:Ball|C:See:Cat|D:Dee:Duck|E:Ee:Egg|F:Ef:Fish|G:Jee:Goat|H:Aitch:Hat|I:Eye:Ice cream|J:Jay:Jug|K:Kay:Kite|L:El:Lion|M:Em:Moon|N:En:Nest|O:Oh:Owl|P:Pee:Pencil|Q:Queue:Queen|R:Ar:Rain|S:Es:Sun|T:Tee:Tree|U:You:Umbrella|V:Vee:Van|W:Double-u:Water|X:Ex:Box|Y:Wy:Yarn|Z:Zed:Zebra',
+        ),
+    },
+    arabic: {
+        id: 'arabic',
+        title: 'Arabic Letters',
+        sub: 'Alif Ba · 28 letters',
+        bg: '#1f8b3a',
+        soft: '#eafaea',
+        lang: 'ar-SA',
+        letters: p(
+            'ا:Alif|ب:Ba|ت:Ta|ث:Tha|ج:Jim|ح:Ha|خ:Kha|د:Dal|ذ:Dhal|ر:Ra|ز:Zay|س:Sin|ش:Shin|ص:Sad|ض:Dad|ط:Taa|ظ:Zaa|ع:Ain|غ:Ghain|ف:Fa|ق:Qaf|ك:Kaf|ل:Lam|م:Mim|ن:Nun|ه:Haa|و:Waw|ي:Ya',
+            'Arabic alphabet',
+        ),
+    },
+    numbers: {
+        id: 'numbers',
+        title: 'Numbers',
+        sub: '1, 2, 3, 4 · 1 to 20',
+        bg: '#d69200',
+        soft: '#fff6e0',
+        lang: 'en-US',
+        letters: p(
+            '1:One:১|2:Two:২|3:Three:৩|4:Four:৪|5:Five:৫|6:Six:৬|7:Seven:৭|8:Eight:৮|9:Nine:৯|10:Ten:১০|11:Eleven:১১|12:Twelve:১২|13:Thirteen:১৩|14:Fourteen:১৪|15:Fifteen:১৫|16:Sixteen:১৬|17:Seventeen:১৭|18:Eighteen:১৮|19:Nineteen:১৯|20:Twenty:২০',
+        ),
+    },
+    consonants: {
+        id: 'consonants',
+        title: 'Bangla Consonants',
+        sub: 'ক, খ, গ · ব্যঞ্জনবর্ণ',
+        bg: '#6b2fd6',
+        soft: '#f3edff',
+        lang: 'bn-BD',
+        letters: p(
+            'ক:ko|খ:kho|গ:go|ঘ:gho|ঙ:ungo|চ:cho|ছ:chho|জ:borgio jo|ঝ:jho|ঞ:ingo|ট:to|ঠ:tho|ড:do|ঢ:dho|ণ:murdhonno no|ত:to|থ:tho|দ:do|ধ:dho|ন:donto no|প:po|ফ:pho|ব:bo|ভ:bho|ম:mo|য:ontosto jo|র:ro|ল:lo|শ:talobbo sho|ষ:murdhonno sho|স:donto so|হ:ho',
+            'ব্যঞ্জনবর্ণ',
+        ),
+    },
+    vowels: {
+        id: 'vowels',
+        title: 'Bangla Vowels',
+        sub: 'অ, আ ই · স্বরবর্ণ',
+        bg: '#d62b74',
+        soft: '#fff0f6',
+        lang: 'bn-BD',
+        letters: p(
+            'অ:o|আ:a|ই:i|ঈ:dirgho i|উ:u|ঊ:dirgho u|ঋ:ri|এ:e|ঐ:oi|ও:o|ঔ:ou',
+            'স্বরবর্ণ',
+        ),
+    },
+};
+
+const ALL: (Letter & { lang: string })[] = (
+    Object.keys(CATS) as CatId[]
+).flatMap((k) => CATS[k].letters.map((l) => ({ ...l, lang: CATS[k].lang })));
+const shuffle = <T,>(a: T[]): T[] =>
+    a
+        .map((v) => [Math.random(), v] as const)
+        .sort((x, y) => x[0] - y[0])
+        .map((v) => v[1]);
+const makeQ = () => {
+    const pool = shuffle(ALL);
+    const answer = pool[0];
+    return {
+        answer,
+        opts: shuffle([
+            answer,
+            ...pool.filter((l) => l.name !== answer.name).slice(0, 3),
+        ]),
+    };
+};
+
+// Calls into the native Speech.Speak bridge function (a small NativePHP
+// plugin wrapping android.speech.tts.TextToSpeech / iOS's
+// AVSpeechSynthesizer — see plugins/speech). Android's System WebView does
+// not implement window.speechSynthesis, so "Tap to hear" needs this instead
+// of the Web Speech API.
+async function nativeBridgeCall(
+    method: string,
+    params: Record<string, unknown> = {},
+): Promise<unknown> {
+    const response = await fetch('/_native/api/call', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN':
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({ method, params }),
+    });
+    const result = await response.json();
+    if (result.status === 'error') {
+        throw new Error(result.message || 'Native call failed');
+    }
+    const data = result.data;
+    return data && typeof data === 'object' && 'data' in data
+        ? data.data
+        : data;
+}
+
+// A screen transition pushed onto browser history, so the phone's hardware
+// back button (which the native shell maps to WebView.goBack() when history
+// exists, or exits the app otherwise) steps back through our screens the
+// same way the on-screen back arrow does, instead of quitting the app from
+// any depth.
+type NavState = {
+    screen: 'home' | 'cat' | 'letter' | 'quiz';
+    catId: CatId | null;
+    idx: number;
+};
+
+const STICKER =
+    '3px 3px 0 #fff,-3px 3px 0 #fff,3px -3px 0 #fff,-3px -3px 0 #fff,0 7px 6px rgba(0,0,0,.16)';
+const S: Record<string, CSSProperties> = {
+    shell: {
+        width: '100%',
+        maxWidth: 430,
+        margin: '0 auto',
+        minHeight: '100dvh',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#eaf6ff',
+        fontFamily: "'Nunito',system-ui,sans-serif",
+    },
+    screen: {
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    sky: {
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        background:
+            'linear-gradient(168deg,#f6f9ff 0%,#eef4fd 46%,#f7f3ff 100%)',
+    },
+    blooms: {
+        position: 'absolute',
+        inset: 0,
+        background:
+            'radial-gradient(circle 220px at 108% 16%,rgba(94,162,255,.16),rgba(94,162,255,0) 70%),' +
+            'radial-gradient(circle 200px at -12% 46%,rgba(255,168,86,.13),rgba(255,168,86,0) 70%),' +
+            'radial-gradient(circle 240px at 90% 96%,rgba(138,96,240,.13),rgba(138,96,240,0) 70%)',
+    },
+    dots: {
+        position: 'absolute',
+        inset: 0,
+        opacity: 0.5,
+        background:
+            'radial-gradient(circle 1.4px at 1.4px 1.4px,rgba(38,74,130,.18) 1.4px,rgba(0,0,0,0) 1.5px) 0 0/22px 22px',
+    },
+    fade: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 150,
+        background:
+            'linear-gradient(180deg,rgba(247,249,255,0),rgba(255,255,255,.6))',
+    },
+    scroll: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: '4px 16px 24px',
+    } as CSSProperties,
+    grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+    glyphRow: {
+        position: 'relative',
+        height: 78,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+    },
+    pillIcon: {
+        width: 28,
+        height: 28,
+        flex: 'none',
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,.22)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+    },
+    back: {
+        width: 40,
+        height: 40,
+        flex: 'none',
+        borderRadius: '50%',
+        background: '#fff',
+        boxShadow: '0 3px 0 rgba(0,0,0,.14)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        border: 0,
+    },
+    chev: {
+        display: 'block',
+        width: 11,
+        height: 11,
+        borderLeft: '4px solid #2c3e58',
+        borderBottom: '4px solid #2c3e58',
+        transform: 'rotate(45deg)',
+        marginLeft: -3,
+    },
+    ph: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        font: '700 7px ui-monospace,monospace',
+        textAlign: 'center',
+        lineHeight: 1.1,
+    },
+};
+
+const card = (
+    from: string,
+    to: string,
+    shadow: string,
+    wide = false,
+): CSSProperties => ({
+    gridColumn: wide ? '1 / -1' : undefined,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 24,
+    padding: '12px 10px 10px',
+    background: `linear-gradient(180deg,${from},${to})`,
+    boxShadow: `0 6px 0 ${shadow}`,
+    cursor: 'pointer',
+    border: 0,
+    width: '100%',
+    textAlign: 'left',
+    font: 'inherit',
+});
+const pill = (bg: string, shadow: string): CSSProperties => ({
+    position: 'relative',
+    marginTop: 8,
+    borderRadius: 999,
+    background: bg,
+    boxShadow: `0 3px 0 ${shadow}`,
+    padding: '7px 10px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+});
+const glyph = (color: string, size: number, family: string): CSSProperties => ({
+    color,
+    font: `${family === "'Baloo 2'" ? 800 : 700} ${size}px/1 ${family}`,
+    textShadow: STICKER,
+});
+
+const WaveDefs = () => (
+    <svg
+        width={0}
+        height={0}
+        style={{ position: 'absolute' }}
+        aria-hidden="true"
+    >
+        <defs>
+            <clipPath id="hdrWave" clipPathUnits="objectBoundingBox">
+                <path d="M0,0 L1,0 L1,0.82 C0.84,1 0.66,0.76 0.5,0.85 C0.33,0.94 0.16,1.02 0,0.86 Z" />
+            </clipPath>
+        </defs>
+    </svg>
+);
+
+const HeaderCrest = () => (
+    <svg
+        viewBox="0 0 390 48"
+        preserveAspectRatio="none"
+        style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 14,
+            width: '100%',
+            height: 48,
+            display: 'block',
+        }}
+    >
+        <path
+            d="M0,30 C62,52 124,8 198,22 C266,36 332,50 390,30 L390,48 L0,48 Z"
+            fill="rgba(255,255,255,0.17)"
+        />
+    </svg>
+);
+
+const BookIcon = () => (
+    <span style={S.pillIcon}>
+        <span
+            style={{
+                display: 'block',
+                width: 6,
+                height: 13,
+                borderRadius: '2px 0 0 2px',
+                background: '#fff',
+            }}
+        />
+        <span
+            style={{
+                display: 'block',
+                width: 6,
+                height: 13,
+                borderRadius: '0 2px 2px 0',
+                background: '#fff',
+            }}
+        />
+    </span>
+);
 
 export default function Welcome() {
-    const { auth, currentTeam } = usePage().props;
-    const dashboardUrl = currentTeam ? dashboard(currentTeam.slug) : "/";
+    const [screen, setScreen] = useState<'home' | 'cat' | 'letter' | 'quiz'>(
+        'home',
+    );
+    const [q, setQ] = useState(makeQ);
+    const [qNum, setQNum] = useState(1);
+    const [score, setScore] = useState(0);
+    const [picked, setPicked] = useState<string | null>(null);
+    const [catId, setCatId] = useState<CatId | null>(null);
+    const [idx, setIdx] = useState(0);
+
+    const cat = catId ? CATS[catId] : null;
+    const list = cat ? cat.letters : [];
+    const cur = list[idx] ?? { ch: '', name: '', word: '' };
+
+    // Restore the previous screen whenever browser history is popped —
+    // by the on-screen back arrows (via goBack, below) or by the phone's
+    // hardware back button walking WebView history.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        if (!window.history.state || window.history.state.screen === undefined) {
+            const initial: NavState = { screen: 'home', catId: null, idx: 0 };
+            window.history.replaceState(initial, '');
+        }
+
+        const onPopState = (e: PopStateEvent) => {
+            const s = e.state as NavState | null;
+            if (!s) return;
+            setScreen(s.screen);
+            setCatId(s.catId);
+            setIdx(s.idx);
+        };
+
+        window.addEventListener('popstate', onPopState);
+        return () => window.removeEventListener('popstate', onPopState);
+    }, []);
+
+    const pushScreen = (next: NavState) => {
+        setScreen(next.screen);
+        setCatId(next.catId);
+        setIdx(next.idx);
+        window.history?.pushState(next, '');
+        buzz();
+    };
+    const goBack = () => {
+        window.history.back();
+    };
+
+    // A short native tap buzz (Device.Vibrate is core to nativephp/mobile,
+    // no plugin needed) on meaningful selections — silently does nothing
+    // outside the native shell (desktop browser dev preview).
+    const buzz = () => {
+        nativeBridgeCall('Device.Vibrate').catch(() => {});
+    };
+
+    const say = (text: string, lang?: string) => {
+        const speakLang = lang || 'en-US';
+        nativeBridgeCall('Speech.Speak', { text, lang: speakLang, rate: 0.85 }).catch(() => {
+            // Not running inside the native shell (e.g. `npm run dev` in a
+            // desktop browser) — fall back to the Web Speech API.
+            if (typeof window === 'undefined' || !window.speechSynthesis) return;
+            try {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = speakLang;
+                u.rate = 0.8;
+                window.speechSynthesis.speak(u);
+            } catch {
+                /* speech not available in this webview */
+            }
+        });
+    };
+
+    const open = (id: CatId) => {
+        pushScreen({ screen: 'cat', catId: id, idx: 0 });
+    };
+    const step = (d: number) => {
+        const n = list.length;
+        if (!n) return;
+        const i = (idx + d + n) % n;
+        setIdx(i);
+        say(list[i].name, cat?.lang);
+    };
+    const tiles = useMemo(
+        () => list.map((l, i) => ({ ...l, color: PAL[i % PAL.length], i })),
+        [list],
+    );
 
     return (
         <>
-            <Head title="Welcome" />
-            <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
-                <header className="mb-6 w-full max-w-[335px] text-sm not-has-[nav]:hidden lg:max-w-4xl">
-                    <nav className="flex items-center justify-end gap-4">
-                        {auth.user ? (
-                            <Link
-                                href={dashboardUrl}
-                                className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+            <Head title="Learn & Grow">
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link
+                    rel="preconnect"
+                    href="https://fonts.gstatic.com"
+                    crossOrigin=""
+                />
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Baloo+Da+2:wght@600;700;800&family=Noto+Naskh+Arabic:wght@700&family=Nunito:wght@600;700;800&display=swap"
+                    rel="stylesheet"
+                />
+                <style>{`
+                    #app { min-height: 100%; }
+                    *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+                    * { scrollbar-width: none; -ms-overflow-style: none; }
+                    html, body { overscroll-behavior: none; touch-action: manipulation; }
+                    * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+                    button { -webkit-user-select: none; user-select: none; }
+                `}</style>
+            </Head>
+
+            {screen === 'home' && (
+                <div style={S.shell}>
+                    <div style={S.sky}>
+                        <div style={S.blooms} />
+                        <div style={S.dots} />
+                        <div style={S.fade} />
+                        <WaveDefs />
+                        <div
+                            style={
+                                {
+                                    position: 'relative',
+                                    padding: '34px 18px 74px',
+                                    background:
+                                        'linear-gradient(180deg,#1478e6 0%,#2b9bf4 55%,#57b6fa 100%)',
+                                    flex: 'none',
+                                    clipPath: 'url(#hdrWave)',
+                                    WebkitClipPath: 'url(#hdrWave)',
+                                } as CSSProperties
+                            }
+                        >
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    right: -30,
+                                    top: -40,
+                                    width: 160,
+                                    height: 160,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,.08)',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    left: -40,
+                                    top: 30,
+                                    width: 120,
+                                    height: 120,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,.07)',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    position: 'relative',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}
                             >
-                                Dashboard
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href={login()}
-                                    className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#19140035] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
+                                <div
+                                    style={{
+                                        ...S.ph,
+                                        width: 52,
+                                        height: 52,
+                                        flex: 'none',
+                                        borderRadius: 14,
+                                        border: '3px solid #2f7d32',
+                                        color: '#2f7d32',
+                                        background:
+                                            'repeating-linear-gradient(135deg,#fff,#fff 5px,#e6f2ff 5px,#e6f2ff 10px)',
+                                    }}
                                 >
-                                    Log in
-                                </Link>
-                                <Link
-                                    href={register()}
-                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                    logo
+                                    <br />
+                                    art
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                        style={{
+                                            font: "800 31px/1 'Baloo 2'",
+                                            color: '#fff',
+                                            letterSpacing: '-.5px',
+                                            textShadow:
+                                                '0 3px 0 rgba(12,74,130,.35)',
+                                        }}
+                                    >
+                                        Learn{' '}
+                                        <span style={{ color: '#ffd23f' }}>
+                                            &amp;
+                                        </span>{' '}
+                                        Grow
+                                    </div>
+                                    <div
+                                        style={{
+                                            font: "700 13px 'Nunito'",
+                                            color: '#eaf6ff',
+                                            marginTop: 3,
+                                        }}
+                                    >
+                                        Small Steps &nbsp;Big Future
+                                    </div>
+                                </div>
+                                <button
+                                    aria-label="Settings"
+                                    style={{
+                                        width: 44,
+                                        height: 44,
+                                        flex: 'none',
+                                        borderRadius: '50%',
+                                        background: '#fff',
+                                        boxShadow:
+                                            '0 4px 0 rgba(12,74,130,.25)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: 0,
+                                        cursor: 'pointer',
+                                    }}
                                 >
-                                    Register
-                                </Link>
-                            </>
-                        )}
-                    </nav>
-                </header>
-                <div className="flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
-                    <main className="flex w-full max-w-[335px] flex-col-reverse lg:max-w-4xl lg:flex-row">
-                        <div className="flex-1 rounded-br-lg rounded-bl-lg bg-white p-6 pb-12 text-[13px] leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-tl-lg lg:rounded-br-none lg:p-20 dark:bg-[#161615] dark:text-[#EDEDEC] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
-                            <h1 className="mb-1 font-medium">
-                                Let's get started oke0
-                            </h1>
-                            <p className="mb-2 text-[#706f6c] dark:text-[#A1A09A]">
-                                Laravel has an incredibly rich ecosystem.
-                                <br />
-                                We suggest starting with the following.
-                            </p>
-                            <ul className="mb-4 flex flex-col lg:mb-6">
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-1/2 before:bottom-0 before:left-[0.4rem] before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A]">
-                                    <span className="relative bg-white py-1 dark:bg-[#161615]">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#e3e3e0] bg-[#FDFDFC] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
+                                    <span
+                                        style={{
+                                            position: 'relative',
+                                            width: 26,
+                                            height: 26,
+                                            borderRadius: '50%',
+                                            background:
+                                                'repeating-conic-gradient(from 11.25deg,#2c3e58 0 22.5deg,rgba(0,0,0,0) 22.5deg 45deg)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: 20,
+                                                height: 20,
+                                                borderRadius: '50%',
+                                                background: '#2c3e58',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    width: 7,
+                                                    height: 7,
+                                                    borderRadius: '50%',
+                                                    background: '#fff',
+                                                }}
+                                            />
                                         </span>
                                     </span>
-                                    <span>
-                                        1. Read the okey ok ok
-                                        2. hello sir how are you
-                                        <a
-                                            href="https://laravel.com/docs"
-                                            target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
+                                </button>
+                            </div>
+                            <HeaderCrest />
+                        </div>
+
+                        <div
+                            style={{
+                                ...S.scroll,
+                                position: 'relative',
+                                padding: '8px 16px 18px',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    padding: '2px 0 14px',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        ...S.ph,
+                                        width: 66,
+                                        height: 66,
+                                        flex: 'none',
+                                        borderRadius: 18,
+                                        color: '#4a7ba8',
+                                        background:
+                                            'repeating-linear-gradient(45deg,#fff,#fff 5px,#dceeff 5px,#dceeff 10px)',
+                                    }}
+                                >
+                                    kid
+                                    <br />
+                                    mascot
+                                </div>
+                                <div>
+                                    <div
+                                        style={{
+                                            font: "800 27px/1 'Baloo 2'",
+                                            color: '#173d6b',
+                                        }}
+                                    >
+                                        Welcome!
+                                    </div>
+                                    <div
+                                        style={{
+                                            font: "700 13.5px 'Nunito'",
+                                            color: '#3a6390',
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        Choose a category to start learning
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={S.grid}>
+                                <button
+                                    onClick={() => open('english')}
+                                    style={card(
+                                        '#d6ecff',
+                                        '#a9d8fb',
+                                        'rgba(31,122,224,.18)',
+                                    )}
+                                >
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            font: "800 34px 'Baloo 2'",
+                                            color: 'rgba(31,122,224,.13)',
+                                            padding: '6px 10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                        }}
+                                    >
+                                        A<span>B</span>
+                                    </div>
+                                    <div style={S.glyphRow}>
+                                        <span
+                                            style={glyph(
+                                                '#ee2f5a',
+                                                50,
+                                                "'Baloo 2'",
+                                            )}
                                         >
-                                            <span>Documentation</span>
-                                            <svg
-                                                width={10}
-                                                height={11}
-                                                viewBox="0 0 10 11"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-2.5 w-2.5"
+                                            A
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#1f7ae0',
+                                                50,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            B
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#f9b21b',
+                                                50,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            C
+                                        </span>
+                                    </div>
+                                    <div
+                                        style={pill(
+                                            '#1f7ae0',
+                                            'rgba(12,60,120,.35)',
+                                        )}
+                                    >
+                                        <BookIcon />
+                                        <div>
+                                            <div
+                                                style={{
+                                                    font: "800 17px/1 'Baloo 2'",
+                                                    color: '#fff',
+                                                }}
                                             >
-                                                <path
-                                                    d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="square"
-                                                />
+                                                abc
+                                            </div>
+                                            <div
+                                                style={{
+                                                    font: "800 10.5px 'Nunito'",
+                                                    color: '#e6f2ff',
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                English Letters
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => open('arabic')}
+                                    style={card(
+                                        '#c9f0c2',
+                                        '#8ddc86',
+                                        'rgba(45,125,45,.2)',
+                                    )}
+                                >
+                                    <div
+                                        style={{
+                                            ...S.glyphRow,
+                                            direction: 'rtl',
+                                            font: "700 48px/1 'Noto Naskh Arabic'",
+                                            color: '#14682a',
+                                            textShadow: STICKER,
+                                        }}
+                                    >
+                                        ا ب ت
+                                    </div>
+                                    <div
+                                        style={pill(
+                                            '#1f8b3a',
+                                            'rgba(15,70,30,.4)',
+                                        )}
+                                    >
+                                        <span style={S.pillIcon}>
+                                            <span
+                                                style={{
+                                                    display: 'block',
+                                                    width: 13,
+                                                    height: 13,
+                                                    borderRadius:
+                                                        '50% 50% 3px 3px',
+                                                    background: '#fff',
+                                                }}
+                                            />
+                                        </span>
+                                        <div>
+                                            <div
+                                                style={{
+                                                    font: "800 14.5px/1 'Baloo 2'",
+                                                    color: '#fff',
+                                                }}
+                                            >
+                                                Arabic Letters
+                                            </div>
+                                            <div
+                                                style={{
+                                                    font: "800 10.5px 'Nunito'",
+                                                    color: '#e4ffe8',
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                Alif Ba
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => open('numbers')}
+                                    style={card(
+                                        '#ffe08a',
+                                        '#f9c23c',
+                                        'rgba(190,130,10,.2)',
+                                    )}
+                                >
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            padding: '6px 10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            font: "800 30px 'Baloo 2'",
+                                            color: 'rgba(160,110,10,.16)',
+                                        }}
+                                    >
+                                        5<span>8</span>
+                                    </div>
+                                    <div style={S.glyphRow}>
+                                        <span
+                                            style={glyph(
+                                                '#ee2f30',
+                                                48,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            1
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#1f7ae0',
+                                                48,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            2
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#5fb316',
+                                                48,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            3
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#8b3ff0',
+                                                48,
+                                                "'Baloo 2'",
+                                            )}
+                                        >
+                                            4
+                                        </span>
+                                    </div>
+                                    <div
+                                        style={pill(
+                                            '#d69200',
+                                            'rgba(130,88,0,.4)',
+                                        )}
+                                    >
+                                        <span style={S.pillIcon}>
+                                            <span
+                                                style={{
+                                                    display: 'block',
+                                                    width: 13,
+                                                    height: 13,
+                                                    borderRadius: 3,
+                                                    background: '#fff',
+                                                }}
+                                            />
+                                        </span>
+                                        <div>
+                                            <div
+                                                style={{
+                                                    font: "800 15px/1 'Baloo 2'",
+                                                    color: '#fff',
+                                                }}
+                                            >
+                                                1, 2, 3, 4
+                                            </div>
+                                            <div
+                                                style={{
+                                                    font: "800 10.5px 'Nunito'",
+                                                    color: '#fff5df',
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                Numbers
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => open('consonants')}
+                                    style={card(
+                                        '#e2d6ff',
+                                        '#c3a9fb',
+                                        'rgba(100,60,190,.2)',
+                                    )}
+                                >
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            padding: '6px 10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            font: "700 28px 'Baloo Da 2'",
+                                            color: 'rgba(90,50,180,.16)',
+                                        }}
+                                    >
+                                        ব<span>স</span>
+                                    </div>
+                                    <div style={{ ...S.glyphRow, gap: 6 }}>
+                                        <span
+                                            style={glyph(
+                                                '#ee2f6f',
+                                                44,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            ক
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#1f7ae0',
+                                                44,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            খ
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#3aa93a',
+                                                44,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            গ
+                                        </span>
+                                    </div>
+                                    <div
+                                        style={pill(
+                                            '#6b2fd6',
+                                            'rgba(55,20,120,.4)',
+                                        )}
+                                    >
+                                        <BookIcon />
+                                        <div>
+                                            <div
+                                                style={{
+                                                    font: "700 15px/1 'Baloo Da 2'",
+                                                    color: '#fff',
+                                                }}
+                                            >
+                                                ক, খ, গ
+                                            </div>
+                                            <div
+                                                style={{
+                                                    font: "800 10px 'Nunito'",
+                                                    color: '#f0e7ff',
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                বাংলা ব্যঞ্জনবর্ণ
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => open('vowels')}
+                                    style={card(
+                                        '#ffdcec',
+                                        '#ffb9d6',
+                                        'rgba(200,60,120,.18)',
+                                        true,
+                                    )}
+                                >
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            padding: '8px 14px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            font: "700 30px 'Baloo Da 2'",
+                                            color: 'rgba(200,50,110,.16)',
+                                        }}
+                                    >
+                                        অ<span>আ</span>
+                                    </div>
+                                    <div style={{ ...S.glyphRow, gap: 16 }}>
+                                        <span
+                                            style={glyph(
+                                                '#ee2f5a',
+                                                46,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            অ
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#1f7ae0',
+                                                46,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            আ
+                                        </span>
+                                        <span
+                                            style={glyph(
+                                                '#f9a11b',
+                                                46,
+                                                "'Baloo Da 2'",
+                                            )}
+                                        >
+                                            ই
+                                        </span>
+                                    </div>
+                                    <div
+                                        style={{
+                                            position: 'relative',
+                                            marginTop: 6,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 10,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                ...pill(
+                                                    '#d62b74',
+                                                    'rgba(140,20,70,.4)',
+                                                ),
+                                                flex: 1,
+                                                marginTop: 0,
+                                            }}
+                                        >
+                                            <BookIcon />
+                                            <div>
+                                                <div
+                                                    style={{
+                                                        font: "700 15px/1 'Baloo Da 2'",
+                                                        color: '#fff',
+                                                    }}
+                                                >
+                                                    অ, আ ই
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        font: "800 10.5px 'Nunito'",
+                                                        color: '#ffe6f1',
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    বাংলা স্বরবর্ণ
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            style={{
+                                                width: 52,
+                                                height: 52,
+                                                flex: 'none',
+                                                borderRadius: 14,
+                                                background: '#fff',
+                                                boxShadow:
+                                                    '0 3px 0 rgba(180,50,110,.25)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <svg
+                                                viewBox="0 0 24 24"
+                                                width={30}
+                                                height={30}
+                                                fill="none"
+                                                stroke="#d62b74"
+                                                strokeWidth={2}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5Z" />
+                                                <path d="M14.5 5.5l3 3" />
                                             </svg>
-                                        </a>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setQ(makeQ());
+                                        setQNum(1);
+                                        setScore(0);
+                                        setPicked(null);
+                                        pushScreen({ screen: 'quiz', catId, idx });
+                                    }}
+                                    style={{
+                                        gridColumn: '1 / -1',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        borderRadius: 24,
+                                        padding: '16px 18px',
+                                        background:
+                                            'linear-gradient(120deg,#2a2f6b 0%,#4b3ea8 55%,#6d4bd6 100%)',
+                                        boxShadow: '0 6px 0 rgba(35,25,90,.3)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 14,
+                                        border: 0,
+                                        width: '100%',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            position: 'absolute',
+                                            right: -24,
+                                            top: -30,
+                                            width: 120,
+                                            height: 120,
+                                            borderRadius: '50%',
+                                            background: 'rgba(255,255,255,.08)',
+                                        }}
+                                    />
+                                    <span
+                                        style={{
+                                            position: 'relative',
+                                            width: 52,
+                                            height: 52,
+                                            flex: 'none',
+                                            borderRadius: 16,
+                                            background: '#ffd23f',
+                                            boxShadow:
+                                                '0 4px 0 rgba(0,0,0,.22)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            font: "800 30px/1 'Baloo 2'",
+                                            color: '#2a2f6b',
+                                        }}
+                                    >
+                                        ?
                                     </span>
-                                </li>
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-0 before:bottom-1/2 before:left-[0.4rem] before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A]">
-                                    <span className="relative bg-white py-1 dark:bg-[#161615]">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#e3e3e0] bg-[#FDFDFC] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
+                                    <span
+                                        style={{
+                                            position: 'relative',
+                                            flex: 1,
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                display: 'block',
+                                                font: "800 21px/1 'Baloo 2'",
+                                                color: '#fff',
+                                            }}
+                                        >
+                                            Quiz Time
+                                        </span>
+                                        <span
+                                            style={{
+                                                display: 'block',
+                                                font: "800 11.5px 'Nunito'",
+                                                color: '#d6d2ff',
+                                                marginTop: 4,
+                                            }}
+                                        >
+                                            Test what you learned · all
+                                            categories
                                         </span>
                                     </span>
-                                    <span>
-                                        Watch video tutorials
-                                        <a
-                                            href="https://laracasts.com"
-                                            target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
-                                        >
-                                            <span>Laracasts</span>
-                                            <svg
-                                                width={10}
-                                                height={11}
-                                                viewBox="0 0 10 11"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-2.5 w-2.5"
-                                            >
-                                                <path
-                                                    d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="square"
-                                                />
-                                            </svg>
-                                        </a>
+                                    <span
+                                        style={{
+                                            position: 'relative',
+                                            borderRadius: 999,
+                                            background: '#ffd23f',
+                                            boxShadow:
+                                                '0 3px 0 rgba(0,0,0,.22)',
+                                            padding: '9px 16px',
+                                            font: "800 13px 'Baloo 2'",
+                                            color: '#2a2f6b',
+                                        }}
+                                    >
+                                        Play
                                     </span>
-                                </li>
-                            </ul>
-                            <ul className="flex gap-3 text-sm leading-normal">
-                                <li>
-                                    <a
-                                        href="https://cloud.laravel.com"
-                                        target="_blank"
-                                        className="inline-block rounded-sm border border-black bg-[#1b1b18] px-5 py-1.5 text-sm leading-normal text-white hover:border-black hover:bg-black dark:border-[#eeeeec] dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:border-white dark:hover:bg-white"
-                                    >
-                                        Deploy now
-                                    </a>
-                                </li>
-                            </ul>
+                                </button>
+                            </div>
                         </div>
-                        <div className="relative -mb-px aspect-[335/364] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#fff2f2] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#1D0002]">
-                            {/* Laravel Logo */}
-                            <svg
-                                className="w-full max-w-none translate-y-0 text-[#F53003] opacity-100 transition-all duration-750 dark:text-[#F61500] starting:opacity-0 motion-safe:starting:translate-y-6"
-                                viewBox="0 0 438 104"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    d="M17.2036 -3H0V102.197H49.5189V86.7187H17.2036V-3Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M110.256 41.6337C108.061 38.1275 104.945 35.3731 100.905 33.3681C96.8667 31.3647 92.8016 30.3618 88.7131 30.3618C83.4247 30.3618 78.5885 31.3389 74.201 33.2923C69.8111 35.2456 66.0474 37.928 62.9059 41.3333C59.7643 44.7401 57.3198 48.6726 55.5754 53.1293C53.8287 57.589 52.9572 62.274 52.9572 67.1813C52.9572 72.1925 53.8287 76.8995 55.5754 81.3069C57.3191 85.7173 59.7636 89.6241 62.9059 93.0293C66.0474 96.4361 69.8119 99.1155 74.201 101.069C78.5885 103.022 83.4247 103.999 88.7131 103.999C92.8016 103.999 96.8667 102.997 100.905 100.994C104.945 98.9911 108.061 96.2359 110.256 92.7282V102.195H126.563V32.1642H110.256V41.6337ZM108.76 75.7472C107.762 78.4531 106.366 80.8078 104.572 82.8112C102.776 84.8161 100.606 86.4183 98.0637 87.6206C95.5202 88.823 92.7004 89.4238 89.6103 89.4238C86.5178 89.4238 83.7252 88.823 81.2324 87.6206C78.7388 86.4183 76.5949 84.8161 74.7998 82.8112C73.004 80.8078 71.6319 78.4531 70.6856 75.7472C69.7356 73.0421 69.2644 70.1868 69.2644 67.1821C69.2644 64.1758 69.7356 61.3205 70.6856 58.6154C71.6319 55.9102 73.004 53.5571 74.7998 51.5522C76.5949 49.5495 78.738 47.9451 81.2324 46.7427C83.7252 45.5404 86.5178 44.9396 89.6103 44.9396C92.7012 44.9396 95.5202 45.5404 98.0637 46.7427C100.606 47.9451 102.776 49.5487 104.572 51.5522C106.367 53.5571 107.762 55.9102 108.76 58.6154C109.756 61.3205 110.256 64.1758 110.256 67.1821C110.256 70.1868 109.756 73.0421 108.76 75.7472Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M242.805 41.6337C240.611 38.1275 237.494 35.3731 233.455 33.3681C229.416 31.3647 225.351 30.3618 221.262 30.3618C215.974 30.3618 211.138 31.3389 206.75 33.2923C202.36 35.2456 198.597 37.928 195.455 41.3333C192.314 44.7401 189.869 48.6726 188.125 53.1293C186.378 57.589 185.507 62.274 185.507 67.1813C185.507 72.1925 186.378 76.8995 188.125 81.3069C189.868 85.7173 192.313 89.6241 195.455 93.0293C198.597 96.4361 202.361 99.1155 206.75 101.069C211.138 103.022 215.974 103.999 221.262 103.999C225.351 103.999 229.416 102.997 233.455 100.994C237.494 98.9911 240.611 96.2359 242.805 92.7282V102.195H259.112V32.1642H242.805V41.6337ZM241.31 75.7472C240.312 78.4531 238.916 80.8078 237.122 82.8112C235.326 84.8161 233.156 86.4183 230.614 87.6206C228.07 88.823 225.251 89.4238 222.16 89.4238C219.068 89.4238 216.275 88.823 213.782 87.6206C211.289 86.4183 209.145 84.8161 207.35 82.8112C205.554 80.8078 204.182 78.4531 203.236 75.7472C202.286 73.0421 201.814 70.1868 201.814 67.1821C201.814 64.1758 202.286 61.3205 203.236 58.6154C204.182 55.9102 205.554 53.5571 207.35 51.5522C209.145 49.5495 211.288 47.9451 213.782 46.7427C216.275 45.5404 219.068 44.9396 222.16 44.9396C225.251 44.9396 228.07 45.5404 230.614 46.7427C233.156 47.9451 235.326 49.5487 237.122 51.5522C238.917 53.5571 240.312 55.9102 241.31 58.6154C242.306 61.3205 242.806 64.1758 242.806 67.1821C242.805 70.1868 242.305 73.0421 241.31 75.7472Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M438 -3H421.694V102.197H438V-3Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M139.43 102.197H155.735V48.2834H183.712V32.1665H139.43V102.197Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M324.49 32.1665L303.995 85.794L283.498 32.1665H266.983L293.748 102.197H314.242L341.006 32.1665H324.49Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M376.571 30.3656C356.603 30.3656 340.797 46.8497 340.797 67.1828C340.797 89.6597 356.094 104 378.661 104C391.29 104 399.354 99.1488 409.206 88.5848L398.189 80.0226C398.183 80.031 389.874 90.9895 377.468 90.9895C363.048 90.9895 356.977 79.3111 356.977 73.269H411.075C413.917 50.1328 398.775 30.3656 376.571 30.3656ZM357.02 61.0967C357.145 59.7487 359.023 43.3761 376.442 43.3761C393.861 43.3761 395.978 59.7464 396.099 61.0967H357.02Z"
-                                    fill="currentColor"
-                                />
-                            </svg>
-
-                            {/* 13 */}
-                            <svg
-                                className="relative -mt-[6.6rem] -ml-8 w-[438px] max-w-none [--stroke-color:#1B1B18] lg:ml-0 dark:[--stroke-color:#FF750F]"
-                                viewBox="0 0 440 392"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <g className="text-[#1B1B18] opacity-100 mix-blend-darken transition-all delay-300 duration-750 dark:text-black dark:mix-blend-normal starting:opacity-0">
-                                    <mask
-                                        id="path-1-mask"
-                                        maskUnits="userSpaceOnUse"
-                                        x="-0.328613"
-                                        y="103"
-                                        width="338"
-                                        height="299"
-                                        fill="black"
-                                    >
-                                        <rect
-                                            fill="white"
-                                            x="-0.328613"
-                                            y="103"
-                                            width="338"
-                                            height="299"
-                                        />
-                                        <path d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z" />
-                                        <path d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z" />
-                                    </mask>
-                                    <path
-                                        d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-1-mask)"
-                                    />
-                                    <path
-                                        d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-1-mask)"
-                                    />
-                                </g>
-
-                                <g className="text-[#F3BEC7] opacity-100 transition-all delay-400 duration-750 dark:text-[#4B0600] starting:opacity-0 motion-safe:starting:-translate-x-[26px]">
-                                    <mask
-                                        id="path-2-mask"
-                                        maskUnits="userSpaceOnUse"
-                                        x="25.3357"
-                                        y="103"
-                                        width="338"
-                                        height="299"
-                                        fill="black"
-                                    >
-                                        <rect
-                                            fill="white"
-                                            x="25.3357"
-                                            y="103"
-                                            width="338"
-                                            height="299"
-                                        />
-                                        <path d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z" />
-                                        <path d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z" />
-                                    </mask>
-                                    <path
-                                        d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-2-mask)"
-                                    />
-                                    <path
-                                        d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-2-mask)"
-                                    />
-                                </g>
-
-                                <g className="text-[#F8B803] opacity-100 mix-blend-color transition-all delay-400 duration-750 dark:text-[#391800] dark:mix-blend-hard-light starting:opacity-0 motion-safe:starting:-translate-x-[51px]">
-                                    <mask
-                                        id="path-3-mask"
-                                        maskUnits="userSpaceOnUse"
-                                        x="51"
-                                        y="103"
-                                        width="338"
-                                        height="299"
-                                        fill="black"
-                                    >
-                                        <rect
-                                            fill="white"
-                                            x="51"
-                                            y="103"
-                                            width="338"
-                                            height="299"
-                                        />
-                                        <path d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z" />
-                                        <path d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z" />
-                                    </mask>
-                                    <path
-                                        d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-3-mask)"
-                                    />
-                                    <path
-                                        d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-3-mask)"
-                                    />
-                                </g>
-
-                                <g className="text-[#F3BEC7] opacity-100 mix-blend-multiply transition-all delay-400 duration-750 dark:text-[#733000] dark:mix-blend-normal starting:opacity-0 motion-safe:starting:-translate-x-[78px]">
-                                    <mask
-                                        id="path-4-mask"
-                                        maskUnits="userSpaceOnUse"
-                                        x="76.6643"
-                                        y="103"
-                                        width="338"
-                                        height="299"
-                                        fill="black"
-                                    >
-                                        <rect
-                                            fill="white"
-                                            x="76.6643"
-                                            y="103"
-                                            width="338"
-                                            height="299"
-                                        />
-                                        <path d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z" />
-                                        <path d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z" />
-                                    </mask>
-                                    <path
-                                        d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-4-mask)"
-                                    />
-                                    <path
-                                        d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-4-mask)"
-                                    />
-                                </g>
-
-                                <g className="text-[#F3BEC7] opacity-100 mix-blend-hard-light transition-all delay-400 duration-750 dark:text-[#4B0600] starting:opacity-0 motion-safe:starting:-translate-x-[102px]">
-                                    <mask
-                                        id="path-5-mask"
-                                        maskUnits="userSpaceOnUse"
-                                        x="102.329"
-                                        y="103"
-                                        width="338"
-                                        height="299"
-                                        fill="black"
-                                    >
-                                        <rect
-                                            fill="white"
-                                            x="102.329"
-                                            y="103"
-                                            width="338"
-                                            height="299"
-                                        />
-                                        <path d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z" />
-                                        <path d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z" />
-                                    </mask>
-                                    <path
-                                        d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z"
-                                        fill="currentColor"
-                                    />
-                                    <path
-                                        d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-5-mask)"
-                                    />
-                                    <path
-                                        d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z"
-                                        stroke="var(--stroke-color)"
-                                        strokeWidth="2.4"
-                                        mask="url(#path-5-mask)"
-                                    />
-                                </g>
-                            </svg>
-                            <div className="absolute inset-0 rounded-t-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-t-none lg:rounded-r-lg dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"></div>
-                        </div>
-                    </main>
+                    </div>
                 </div>
-                <div className="hidden h-14.5 lg:block"></div>
-            </div>
+            )}
+
+            {screen === 'quiz' &&
+                (() => {
+                    const correct = !!picked && picked === q.answer.name;
+                    const pick = (name: string) => {
+                        if (picked) return;
+                        const ok = name === q.answer.name;
+                        buzz();
+                        say(ok ? 'Correct' : 'Try again', 'en-US');
+                        setPicked(name);
+                        if (ok) setScore((v) => v + 1);
+                    };
+                    const nextQ = () => {
+                        if (qNum >= 10) {
+                            goBack();
+                            setQNum(1);
+                            setScore(0);
+                        } else {
+                            setQNum((v) => v + 1);
+                        }
+                        setQ(makeQ());
+                        setPicked(null);
+                    };
+                    const optStyle = (name: string): CSSProperties => {
+                        let bg = 'rgba(255,255,255,.94)';
+                        let fg = '#2a2f6b';
+                        let shadow = 'rgba(0,0,0,.22)';
+                        if (picked) {
+                            if (name === q.answer.name) {
+                                bg = '#3ec46a';
+                                fg = '#fff';
+                                shadow = '#23874a';
+                            } else if (name === picked) {
+                                bg = '#ef476f';
+                                fg = '#fff';
+                                shadow = '#a52948';
+                            } else {
+                                bg = 'rgba(255,255,255,.5)';
+                                fg = '#4a4a7a';
+                            }
+                        }
+                        return {
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            borderRadius: 20,
+                            padding: '15px 8px',
+                            background: bg,
+                            boxShadow: `0 4px 0 ${shadow}`,
+                            font: "800 15px 'Baloo 2'",
+                            color: fg,
+                            border: 0,
+                        };
+                    };
+                    return (
+                        <div style={S.shell}>
+                            <div
+                                style={{
+                                    ...S.screen,
+                                    background:
+                                        'linear-gradient(170deg,#232a63 0%,#3b3591 55%,#5a3fbe 100%)',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        flex: 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        padding: '22px 18px 8px',
+                                    }}
+                                >
+                                    <button
+                                        aria-label="Back"
+                                        onClick={goBack}
+                                        style={{
+                                            ...S.back,
+                                            background: 'rgba(255,255,255,.16)',
+                                            boxShadow: 'none',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                ...S.chev,
+                                                borderLeftColor: '#fff',
+                                                borderBottomColor: '#fff',
+                                            }}
+                                        />
+                                    </button>
+                                    <div
+                                        style={{
+                                            flex: 1,
+                                            font: "800 18px 'Baloo 2'",
+                                            color: '#fff',
+                                        }}
+                                    >
+                                        Quiz Time
+                                    </div>
+                                    <div
+                                        style={{
+                                            font: "800 12px 'Nunito'",
+                                            color: '#ffd23f',
+                                            background: 'rgba(0,0,0,.22)',
+                                            padding: '7px 12px',
+                                            borderRadius: 999,
+                                        }}
+                                    >
+                                        Score {score}
+                                    </div>
+                                </div>
+
+                                <div
+                                    style={{
+                                        flex: 'none',
+                                        padding: '10px 20px 0',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            height: 8,
+                                            borderRadius: 999,
+                                            background: 'rgba(255,255,255,.16)',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                height: '100%',
+                                                borderRadius: 999,
+                                                background: '#ffd23f',
+                                                width: `${Math.round((qNum / 10) * 100)}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <div
+                                        style={{
+                                            font: "800 11px 'Nunito'",
+                                            color: '#c7c2ff',
+                                            marginTop: 8,
+                                        }}
+                                    >
+                                        Question {qNum} of 10
+                                    </div>
+                                </div>
+
+                                <div
+                                    style={{
+                                        flex: 1,
+                                        minHeight: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center',
+                                        gap: 22,
+                                        padding: '0 20px',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            textAlign: 'center',
+                                            font: "800 15px 'Nunito'",
+                                            color: '#cfc9ff',
+                                        }}
+                                    >
+                                        Which one is this letter?
+                                    </div>
+                                    <div
+                                        key={qNum}
+                                        style={{
+                                            alignSelf: 'center',
+                                            width: 190,
+                                            height: 190,
+                                            borderRadius: 48,
+                                            background: 'rgba(255,255,255,.97)',
+                                            boxShadow:
+                                                '0 12px 0 rgba(0,0,0,.22)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                font: "700 110px/1 'Baloo Da 2','Noto Naskh Arabic','Baloo 2'",
+                                                color: '#3b3591',
+                                            }}
+                                        >
+                                            {q.answer.ch}
+                                        </span>
+                                    </div>
+                                    <div
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        {q.opts.map((o) => (
+                                            <button
+                                                key={o.name}
+                                                onClick={() => pick(o.name)}
+                                                style={optStyle(o.name)}
+                                            >
+                                                {o.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div
+                                    style={{
+                                        flex: 'none',
+                                        padding: '0 20px 30px',
+                                        minHeight: 78,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    {picked && (
+                                        <div
+                                            style={{
+                                                flex: 1,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 12,
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    flex: 1,
+                                                    font: "800 15px 'Baloo 2'",
+                                                    color: correct
+                                                        ? '#8df0ae'
+                                                        : '#ffb3c6',
+                                                }}
+                                            >
+                                                {correct
+                                                    ? 'Correct! Well done'
+                                                    : `Oops — it was ${q.answer.name}`}
+                                            </div>
+                                            <button
+                                                onClick={nextQ}
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    borderRadius: 18,
+                                                    background: '#ffd23f',
+                                                    boxShadow:
+                                                        '0 4px 0 #c79f00',
+                                                    padding: '13px 26px',
+                                                    font: "800 15px 'Baloo 2'",
+                                                    color: '#2a2f6b',
+                                                    border: 0,
+                                                }}
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+            {screen === 'cat' && cat && (
+                <div style={S.shell}>
+                    <div
+                        style={{
+                            ...S.screen,
+                            background:
+                                'linear-gradient(168deg,#f6f9ff 0%,#eef4fd 46%,#f7f3ff 100%)',
+                        }}
+                    >
+                        <WaveDefs />
+                        <div
+                            style={
+                                {
+                                    flex: 'none',
+                                    padding: '30px 18px 62px',
+                                    position: 'relative',
+                                    background: cat.bg,
+                                    clipPath: 'url(#hdrWave)',
+                                    WebkitClipPath: 'url(#hdrWave)',
+                                } as CSSProperties
+                            }
+                        >
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    right: -30,
+                                    top: -40,
+                                    width: 150,
+                                    height: 150,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,.1)',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    left: -40,
+                                    top: 24,
+                                    width: 110,
+                                    height: 110,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,.08)',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    position: 'relative',
+                                    zIndex: 1,
+                                }}
+                            >
+                                <button
+                                    aria-label="Back"
+                                    onClick={goBack}
+                                    style={{
+                                        ...S.back,
+                                        background: 'rgba(255,255,255,.9)',
+                                    }}
+                                >
+                                    <span style={S.chev} />
+                                </button>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                        style={{
+                                            font: "800 23px/1.05 'Baloo 2'",
+                                            color: '#fff',
+                                            textShadow:
+                                                '0 3px 0 rgba(0,0,0,.18)',
+                                        }}
+                                    >
+                                        {cat.title}
+                                    </div>
+                                    <div
+                                        style={{
+                                            font: "800 12px 'Nunito'",
+                                            color: 'rgba(255,255,255,.9)',
+                                            marginTop: 3,
+                                        }}
+                                    >
+                                        {cat.sub}
+                                    </div>
+                                </div>
+                                <div
+                                    style={{
+                                        font: "800 12px 'Nunito'",
+                                        color: '#fff',
+                                        background: 'rgba(0,0,0,.18)',
+                                        padding: '6px 11px',
+                                        borderRadius: 999,
+                                    }}
+                                >
+                                    {list.length} cards
+                                </div>
+                            </div>
+                            <HeaderCrest />
+                        </div>
+                        <div style={{ ...S.scroll, padding: '8px 16px 26px' }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(4,1fr)',
+                                    gap: 10,
+                                }}
+                            >
+                                {tiles.map((t) => (
+                                    <button
+                                        key={t.i}
+                                        onClick={() => {
+                                            pushScreen({ screen: 'letter', catId, idx: t.i });
+                                            say(t.name, cat.lang);
+                                        }}
+                                        style={{
+                                            cursor: 'pointer',
+                                            borderRadius: 18,
+                                            background: '#fff',
+                                            boxShadow:
+                                                '0 4px 0 rgba(30,70,120,.12)',
+                                            padding: '8px 4px 6px',
+                                            textAlign: 'center',
+                                            border: 0,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                font: "700 26px/1.1 'Baloo Da 2','Noto Naskh Arabic','Baloo 2'",
+                                                color: t.color,
+                                            }}
+                                        >
+                                            {t.ch}
+                                        </div>
+                                        <div
+                                            style={{
+                                                font: "800 9px 'Nunito'",
+                                                color: '#7d93ad',
+                                                marginTop: 4,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {t.name}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {screen === 'letter' && cat && (
+                <div style={S.shell}>
+                    <div style={{ ...S.screen, background: cat.soft }}>
+                        <div
+                            style={{
+                                flex: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '18px 18px 6px',
+                            }}
+                        >
+                            <button
+                                aria-label="Back"
+                                onClick={goBack}
+                                style={S.back}
+                            >
+                                <span style={S.chev} />
+                            </button>
+                            <div
+                                style={{
+                                    flex: 1,
+                                    font: "800 15px 'Baloo 2'",
+                                    color: '#2c3e58',
+                                }}
+                            >
+                                {cat.title}
+                            </div>
+                            <div
+                                style={{
+                                    font: "800 12px 'Nunito'",
+                                    color: '#5c7796',
+                                }}
+                            >
+                                {idx + 1} / {list.length}
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                flex: 1,
+                                minHeight: 0,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 18,
+                                padding: '0 22px',
+                            }}
+                        >
+                            <div
+                                key={`${cat.id}-${idx}`}
+                                style={{
+                                    width: 250,
+                                    height: 250,
+                                    borderRadius: 60,
+                                    background: '#fff',
+                                    boxShadow: '0 12px 0 rgba(30,70,120,.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        font: "700 150px/1 'Baloo Da 2','Noto Naskh Arabic','Baloo 2'",
+                                        color: PAL[idx % PAL.length],
+                                        textShadow: '0 8px 12px rgba(0,0,0,.1)',
+                                    }}
+                                >
+                                    {cur.ch}
+                                </span>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div
+                                    style={{
+                                        font: "800 30px/1 'Baloo 2'",
+                                        color: '#173d6b',
+                                    }}
+                                >
+                                    {cur.name}
+                                </div>
+                                <div
+                                    style={{
+                                        font: "800 15px 'Nunito'",
+                                        color: '#4a6d94',
+                                        marginTop: 6,
+                                    }}
+                                >
+                                    {cur.word}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => say(cur.name, cat.lang)}
+                                style={{
+                                    cursor: 'pointer',
+                                    borderRadius: 999,
+                                    background: '#ffb400',
+                                    boxShadow: '0 5px 0 #c98700',
+                                    padding: '13px 30px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    border: 0,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        display: 'block',
+                                        width: 14,
+                                        height: 14,
+                                        background: '#fff',
+                                        clipPath:
+                                            'polygon(0 30%,45% 30%,100% 0,100% 100%,45% 70%,0 70%)',
+                                    }}
+                                />
+                                <span
+                                    style={{
+                                        font: "800 16px 'Baloo 2'",
+                                        color: '#fff',
+                                    }}
+                                >
+                                    Tap to hear
+                                </span>
+                            </button>
+                        </div>
+
+                        <div
+                            style={{
+                                flex: 'none',
+                                display: 'flex',
+                                gap: 12,
+                                padding: '0 22px 30px',
+                            }}
+                        >
+                            <button
+                                onClick={() => step(-1)}
+                                style={{
+                                    flex: 1,
+                                    cursor: 'pointer',
+                                    borderRadius: 20,
+                                    background: '#fff',
+                                    boxShadow: '0 4px 0 rgba(30,70,120,.14)',
+                                    padding: '14px 0',
+                                    font: "800 15px 'Baloo 2'",
+                                    color: '#2c3e58',
+                                    border: 0,
+                                }}
+                            >
+                                Back
+                            </button>
+                            <button
+                                onClick={() => step(1)}
+                                style={{
+                                    flex: 1.6,
+                                    cursor: 'pointer',
+                                    borderRadius: 20,
+                                    background: cat.bg,
+                                    boxShadow: '0 4px 0 rgba(0,0,0,.2)',
+                                    padding: '14px 0',
+                                    font: "800 15px 'Baloo 2'",
+                                    color: '#fff',
+                                    border: 0,
+                                }}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

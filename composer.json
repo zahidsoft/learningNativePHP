@@ -16,7 +16,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "nativephp/mobile": "^4.3"
+        "nativephp/mobile": "^4.3",
+        "nativephp/plugin-speech": "@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -115,5 +116,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "plugins/speech"
+        }
+    ]
 }

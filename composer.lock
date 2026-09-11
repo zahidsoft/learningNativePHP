@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "375f0b5256bb2e7c4a2f383209198d02",
+    "content-hash": "a02588e7808313ce6b68f8cddb7a61e9",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -2823,6 +2823,56 @@
                 "source": "https://github.com/NativePHP/mobile-air/tree/4.3.1"
             },
             "time": "2026-09-01T15:19:23+00:00"
+        },
+        {
+            "name": "nativephp/plugin-speech",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "plugins/speech",
+                "reference": "a47046391991f9a9cb7cfde27670704df7dbb87b"
+            },
+            "require": {
+                "nativephp/mobile": "^4.3",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "pestphp/pest": "^3.0"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Nativephp\\Speech\\SpeechServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Nativephp\\Speech\\": "src/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Your Name",
+                    "email": "you@example.com"
+                }
+            ],
+            "description": "A NativePHP Mobile plugin",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nesbot/carbon",
@@ -12187,7 +12237,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nativephp/plugin-speech": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
