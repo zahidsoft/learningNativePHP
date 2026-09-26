@@ -30,12 +30,26 @@ export default defineConfig({
         }),
         tailwindcss(),
         nativephpMobile(),
+        // nativephpMobile() forces server.hmr.host to the machine's LAN IP
+        // (via Object.assign in its `enforce: 'pre'` config hook), which the
+        // Android emulator's virtual network usually can't reach — so the
+        // HMR websocket silently fails to connect and .tsx edits never
+        // arrive in the WebView, even though the initial page load (which
+        // correctly uses the 10.0.2.2 host alias, see public/android-hot)
+        // works fine. This runs as a normal-enforce plugin, so it executes
+        // after nativephpMobile()'s pre-enforce hook and wins.
+        {
+            name: "nativephp-android-hmr-fix",
+            config(userConfig) {
+                if (process.argv.includes("--mode=android")) {
+                    userConfig.server = userConfig.server || {};
+                    userConfig.server.hmr = { host: "10.0.2.2", protocol: "ws" };
+                }
+            },
+        },
     ]),
     server: {
-        host: "0.0.0.0", // Local network-এ listen করার জন্য
-        ws: {
-            host: "10.0.2.2", // Android Emulator থেকে host pc ধরতে
-        },
+        host: "0.0.0.0", // Local network-এ listen করার জন্য (physical device testing)
         watch: {
             ignored: [
                 "**/.agents/**",
