@@ -209,24 +209,6 @@ export function LetterScreen({
                                     >
                                         /{ph.symbol}/
                                     </button>
-                                    <button
-                                        onClick={() =>
-                                            playAudioFile(ph.words).catch(
-                                                () => {},
-                                            )
-                                        }
-                                        aria-label={`Hear /${ph.symbol}/ in a word`}
-                                        style={{
-                                            border: 0,
-                                            background: "transparent",
-                                            cursor: "pointer",
-                                            padding: 0,
-                                            font: "800 9px 'Nunito'",
-                                            color: "#7d93ad",
-                                        }}
-                                    >
-                                        in a word
-                                    </button>
                                 </div>
                             ))}
                         </div>
