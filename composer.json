@@ -16,7 +16,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "nativephp/mobile": "^4.3",
+        "nativephp/mobile": "^4.6",
+        "nativephp/mobile-ui": "^0.8.0",
         "nativephp/plugin-speech": "@dev"
     },
     "require-dev": {

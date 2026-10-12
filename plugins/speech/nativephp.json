@@ -31,6 +31,12 @@
             "description": "Speak text aloud using the device's native text-to-speech engine"
         },
         {
+            "name": "Speech.PlayFile",
+            "android": "com.nativephp.plugins.speech.SpeechFunctions.PlayFile",
+            "ios": "SpeechFunctions.PlayFile",
+            "description": "Play a recorded audio clip from an absolute file path on the device"
+        },
+        {
             "name": "Speech.Stop",
             "android": "com.nativephp.plugins.speech.SpeechFunctions.Stop",
             "ios": "SpeechFunctions.Stop",

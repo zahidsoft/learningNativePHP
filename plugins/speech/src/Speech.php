@@ -27,7 +27,28 @@ class Speech
     }
 
     /**
-     * Stop any speech currently playing.
+     * Play a recorded audio clip from an absolute path on the device.
+     *
+     * Returns false when the clip could not be started (no native bridge, or
+     * the file is missing or unplayable), so callers can fall back to speak().
+     */
+    public function playFile(string $path): bool
+    {
+        if (! function_exists('nativephp_call')) {
+            return false;
+        }
+
+        $result = nativephp_call('Speech.PlayFile', json_encode(['path' => $path]));
+
+        if (! $result) {
+            return false;
+        }
+
+        return (bool) (json_decode($result)->data->playing ?? false);
+    }
+
+    /**
+     * Stop any speech or audio clip currently playing.
      */
     public function stop(): ?object
     {
