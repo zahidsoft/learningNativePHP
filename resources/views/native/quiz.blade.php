@@ -38,7 +38,7 @@
             <native:column class="w-full gap-2">
                 <native:row class="w-full gap-1">
                     @for ($step = 1; $step <= $questionCount; $step++)
-                        <native:column :class="'flex-1 h-[8] rounded-full ' . ($step <= $questionNumber ? 'bg-theme-highlight' : 'bg-theme-on-quiz/20')"></native:column>
+                        <native:rect :class="'flex-1 h-[8] rounded-full ' . ($step <= $questionNumber ? 'bg-theme-highlight' : 'bg-theme-on-quiz/20')" />
                     @endfor
                 </native:row>
                 <native:text font="label" class="text-sm text-theme-quiz-muted">Question {{ $questionNumber }} of {{ $questionCount }}</native:text>

@@ -49,7 +49,7 @@
                     @endforeach
 
                     @for ($filler = count($row); $filler < $columns; $filler++)
-                        <native:column class="flex-1"></native:column>
+                        <native:rect class="flex-1 h-[1] bg-transparent" />
                     @endfor
                 </native:row>
             @endforeach

@@ -18,6 +18,16 @@ test('it lists every learning category with its card count', function () {
     }
 });
 
+test('it greets the learner by the time of day', function (string $time, string $greeting) {
+    $this->travelTo("2026-01-01 {$time}");
+
+    Native::test(Home::class)->assertSee($greeting);
+})->with([
+    'morning' => ['08:00', 'Good morning!'],
+    'noon' => ['12:00', 'Good afternoon!'],
+    'evening' => ['17:00', 'Good evening!'],
+]);
+
 test('it opens a category when its card is tapped', function () {
     Native::test(Home::class)
         ->tap('Arabic Letters')

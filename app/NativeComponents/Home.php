@@ -11,9 +11,24 @@ class Home extends NativeComponent
     public function render(): Element
     {
         return $this->view('home', [
+            'greeting' => $this->greeting(),
             'categoryRows' => array_chunk(LearningCategory::cases(), 2),
             'letterOfTheDay' => $this->letterOfTheDay(),
         ]);
+    }
+
+    /**
+     * Greet the learner according to the time of day.
+     */
+    private function greeting(): string
+    {
+        $hour = now()->hour;
+
+        return match (true) {
+            $hour < 12 => 'Good morning!',
+            $hour < 17 => 'Good afternoon!',
+            default => 'Good evening!',
+        };
     }
 
     /**

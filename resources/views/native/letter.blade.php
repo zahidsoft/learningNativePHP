@@ -30,7 +30,7 @@
                     <native:text font="label" class="text-sm text-theme-on-surface-variant">Count the dots</native:text>
                     <native:row class="w-full flex-wrap justify-center gap-2">
                         @for ($dot = 0; $dot < $dotCount; $dot++)
-                            <native:column :class="'w-[26] h-[26] rounded-full bg-[' . LearningCategory::tileColor($dot) . ']'"></native:column>
+                            <native:circle :class="'w-[26] h-[26] bg-[' . LearningCategory::tileColor($dot) . ']'" />
                         @endfor
                     </native:row>
                 </native:column>

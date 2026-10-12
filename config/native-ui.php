@@ -16,6 +16,8 @@ $palette = [
     // Primary brand color — the home header and other key accents.
     'primary' => '#1478E6',
     'on-primary' => '#FFFFFF',
+    // Lighter end of the header gradient.
+    'primary-light' => '#57B6FA',
 
     'secondary' => '#3A6390',
     'on-secondary' => '#FFFFFF',
@@ -48,6 +50,8 @@ $palette = [
     // The quiz: its deep indigo page, and the yellow used on top of it.
     'quiz' => '#2F2B7A',
     'on-quiz' => '#FFFFFF',
+    // Lighter end of the quiz banner gradient.
+    'quiz-light' => '#6D4BD6',
     'quiz-muted' => '#C7C2FF',
     'highlight' => '#FFD23F',
     'on-highlight' => '#2A2F6B',
