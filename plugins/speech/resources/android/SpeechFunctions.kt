@@ -3,10 +3,15 @@ package com.nativephp.plugins.speech
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import androidx.fragment.app.FragmentActivity
 import com.nativephp.mobile.bridge.BridgeFunction
 import com.nativephp.mobile.bridge.BridgeResponse
+import com.nativephp.mobile.utils.NativeActionCoordinator
+import org.json.JSONObject
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -141,12 +146,16 @@ object SpeechFunctions {
     /**
      * Play a recorded audio clip (voice line, SFX) from the device filesystem.
      *
+     * When the clip plays to its end (not when it is stopped or replaced),
+     * an AudioFinished event carrying its path is sent to PHP, so a screen
+     * can move on to the next clip.
+     *
      * Parameters:
      *   - path: string (required) — absolute path of the audio file
      * Returns:
      *   - playing: boolean
      */
-    class PlayFile(private val context: Context) : BridgeFunction {
+    class PlayFile(private val activity: FragmentActivity) : BridgeFunction {
         override fun execute(parameters: Map<String, Any>): Map<String, Any> {
             val path = (parameters["path"] as? String)?.trim().orEmpty()
             if (path.isEmpty()) {
@@ -182,6 +191,7 @@ object SpeechFunctions {
                             player = null
                         }
                     }
+                    announceFinished(activity, file.absolutePath)
                 }
                 created.setOnErrorListener { failed, _, _ ->
                     synchronized(playerLock) {
@@ -203,6 +213,63 @@ object SpeechFunctions {
                 releasePlayer()
                 BridgeResponse.error("PLAYBACK_FAILED", e.message ?: "Could not play $path")
             }
+        }
+    }
+
+    /**
+     * Tell PHP a clip played to its end. Events only reach PHP from the main thread.
+     */
+    private fun announceFinished(activity: FragmentActivity, path: String) {
+        val payload = JSONObject().apply { put("path", path) }
+
+        Handler(Looper.getMainLooper()).post {
+            NativeActionCoordinator.dispatchEvent(activity, AUDIO_FINISHED_EVENT, payload.toString())
+        }
+    }
+
+    private const val AUDIO_FINISHED_EVENT = "Nativephp\\Speech\\Events\\AudioFinished"
+
+    /**
+     * Pause the clip currently playing, keeping its position.
+     *
+     * Returns:
+     *   - paused: boolean — false when nothing was playing
+     */
+    class Pause(private val context: Context) : BridgeFunction {
+        override fun execute(parameters: Map<String, Any>): Map<String, Any> {
+            val paused = synchronized(playerLock) {
+                val current = player
+                if (current != null && current.isPlaying) {
+                    current.pause()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            return BridgeResponse.success(mapOf("paused" to paused))
+        }
+    }
+
+    /**
+     * Carry on playing a paused clip from where it stopped.
+     *
+     * Returns:
+     *   - playing: boolean — false when there was no paused clip
+     */
+    class Resume(private val context: Context) : BridgeFunction {
+        override fun execute(parameters: Map<String, Any>): Map<String, Any> {
+            val playing = synchronized(playerLock) {
+                val current = player
+                if (current != null && !current.isPlaying) {
+                    // start() throws while the clip is still being prepared.
+                    runCatching { current.start() }.isSuccess
+                } else {
+                    false
+                }
+            }
+
+            return BridgeResponse.success(mapOf("playing" to playing))
         }
     }
 

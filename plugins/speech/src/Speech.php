@@ -48,6 +48,44 @@ class Speech
     }
 
     /**
+     * Call a parameterless bridge function and read one boolean from its data.
+     */
+    private function callForFlag(string $method, string $flag): bool
+    {
+        if (! function_exists('nativephp_call')) {
+            return false;
+        }
+
+        $result = nativephp_call($method, '{}');
+
+        if (! $result) {
+            return false;
+        }
+
+        return (bool) (json_decode($result)->data->{$flag} ?? false);
+    }
+
+    /**
+     * Pause the clip currently playing, keeping its position.
+     *
+     * Returns false when nothing was playing.
+     */
+    public function pause(): bool
+    {
+        return $this->callForFlag('Speech.Pause', 'paused');
+    }
+
+    /**
+     * Carry on playing a paused clip from where it stopped.
+     *
+     * Returns false when there was no paused clip.
+     */
+    public function resume(): bool
+    {
+        return $this->callForFlag('Speech.Resume', 'playing');
+    }
+
+    /**
      * Stop any speech or audio clip currently playing.
      */
     public function stop(): ?object

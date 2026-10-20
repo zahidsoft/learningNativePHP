@@ -1,6 +1,7 @@
 @use('App\Enums\LearningCategory')
 @use('App\Icons\Android')
 @use('App\Icons\Ios')
+@use('App\Services\Quran\Bangla')
 
 <native:top-bar title="Learn & Grow" subtitle="Small Steps, Big Future" :background-color="theme('primary')" :text-color="theme('on-primary')" font-name="headline" />
 
@@ -34,27 +35,30 @@
             </native:row>
         </native:column>
 
-        {{-- Featured card, pulled up so it overlaps the header --}}
+        {{-- Featured Quran card, pulled up so it overlaps the header --}}
         <native:column class="w-full px-4 -mt-[44]">
             <native:pressable
-                @navigate="'/learn/' . $letterOfTheDay['category']->value . '/' . $letterOfTheDay['index']"
+                @navigate="$lastRead === null ? '/quran' : '/quran/surah/' . $lastRead['surah'] . '/' . $lastRead['ayah']"
                 :press-scale="0.97"
-                class="w-full p-4 rounded-[28] bg-theme-surface shadow-lg"
+                class="relative w-full p-4 rounded-[28] shadow-lg bg-gradient-to-r from-theme-quran to-theme-quran-light"
             >
+                <native:circle class="absolute top-[-24] right-[-12] w-[120] h-[120] bg-white/10" />
                 <native:row class="w-full items-center gap-4">
-                    <native:column :class="'w-[84] h-[84] rounded-[26] items-center justify-center bg-[' . $letterOfTheDay['category']->cardColor() . ']'">
-                        <native:text :font="$letterOfTheDay['category']->font()" :class="'text-6xl text-[' . $letterOfTheDay['category']->color() . ']'">{{ $letterOfTheDay['character'] }}</native:text>
+                    <native:column class="w-[72] h-[72] rounded-[24] bg-theme-quran-paper items-center justify-center">
+                        <native:icon :ios="Ios::BookFill" :android="Android::MenuBook" :size="38" class="text-theme-quran" />
                     </native:column>
                     <native:column class="flex-1 gap-1">
-                        <native:row class="items-center gap-1">
-                            <native:icon :ios="Ios::StarFill" :android="Android::Star" :size="14" class="text-theme-accent" />
-                            <native:text font="label" class="text-xs text-theme-accent">Letter of the day</native:text>
-                        </native:row>
-                        <native:text font="headline" class="text-3xl text-theme-on-surface" :max-lines="1">{{ $letterOfTheDay['name'] }}</native:text>
-                        <native:text font="label" class="text-xs text-theme-on-surface-variant" :max-lines="1">{{ $letterOfTheDay['category']->title() }}</native:text>
+                        <native:text font="bangla" class="text-xs text-theme-quran-gold">আল-কুরআন</native:text>
+                        @if ($lastRead === null)
+                            <native:text font="headline" class="text-2xl text-theme-on-quran" :max-lines="1">কুরআন পড়ুন</native:text>
+                            <native:text font="bangla" class="text-xs text-theme-on-quran/80" :max-lines="1">আরবি, বাংলা অর্থ ও তিলাওয়াত</native:text>
+                        @else
+                            <native:text font="headline" class="text-2xl text-theme-on-quran" :max-lines="1">{{ $lastRead['surahName'] }}</native:text>
+                            <native:text font="bangla" class="text-xs text-theme-on-quran/80" :max-lines="1">পড়া চালিয়ে যান · আয়াত {{ Bangla::number($lastRead['ayah']) }}</native:text>
+                        @endif
                     </native:column>
-                    <native:column class="w-[52] h-[52] rounded-full bg-theme-accent shadow-md items-center justify-center">
-                        <native:icon :ios="Ios::SpeakerWave2Fill" :android="Android::VolumeUp" :size="26" class="text-theme-on-accent" />
+                    <native:column class="w-[48] h-[48] rounded-full bg-theme-quran-gold items-center justify-center">
+                        <native:icon :ios="Ios::ChevronRight" :android="Android::ChevronRight" :size="26" class="text-theme-on-quran" />
                     </native:column>
                 </native:row>
             </native:pressable>

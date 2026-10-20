@@ -2,12 +2,8 @@
 
 use App\Enums\LearningCategory;
 use App\NativeComponents\Home;
+use App\Services\Quran\QuranPreferences;
 use Native\Mobile\Testing\Native;
-
-beforeEach(function () {
-    // January 1st makes the letter of the day the very first one: English "A".
-    $this->travelTo('2026-01-01');
-});
 
 test('it lists every learning category with its card count', function () {
     $screen = Native::visit('/')->assertScreen(Home::class);
@@ -40,8 +36,17 @@ test('it opens the quiz from the quiz card', function () {
         ->assertNavigatedTo('/quiz');
 });
 
-test('it links the letter of the day to that letter', function () {
+test('it opens the quran from the quran card', function () {
     Native::test(Home::class)
-        ->tap('Letter of the day')
-        ->assertNavigatedTo('/learn/english/0');
+        ->tap('কুরআন পড়ুন')
+        ->assertNavigatedTo('/quran');
+});
+
+test('it continues the quran where the reader stopped', function () {
+    app(QuranPreferences::class)->setLastRead(112, 3, 'Al-Ikhlaas');
+
+    Native::test(Home::class)
+        ->assertSee('পড়া চালিয়ে যান · আয়াত ৩')
+        ->tap('Al-Ikhlaas')
+        ->assertNavigatedTo('/quran/surah/112/3');
 });

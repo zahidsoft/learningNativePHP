@@ -37,6 +37,18 @@
             "description": "Play a recorded audio clip from an absolute file path on the device"
         },
         {
+            "name": "Speech.Pause",
+            "android": "com.nativephp.plugins.speech.SpeechFunctions.Pause",
+            "ios": "SpeechFunctions.Pause",
+            "description": "Pause the audio clip currently playing, keeping its position"
+        },
+        {
+            "name": "Speech.Resume",
+            "android": "com.nativephp.plugins.speech.SpeechFunctions.Resume",
+            "ios": "SpeechFunctions.Resume",
+            "description": "Carry on playing a paused audio clip"
+        },
+        {
             "name": "Speech.Stop",
             "android": "com.nativephp.plugins.speech.SpeechFunctions.Stop",
             "ios": "SpeechFunctions.Stop",
@@ -70,7 +82,8 @@
     },
     "secrets": [],
     "events": [
-        "Nativephp\\Speech\\Events\\SpeechCompleted"
+        "Nativephp\\Speech\\Events\\SpeechCompleted",
+        "Nativephp\\Speech\\Events\\AudioFinished"
     ],
     "service_provider": "Nativephp\\Speech\\SpeechServiceProvider",
     "hooks": {

@@ -65,6 +65,13 @@ $palette = [
 
     // Streak flame on the home header.
     'streak' => '#FF7A1A',
+
+    // The Quran section: a calm deep green with a soft paper page.
+    'quran' => '#0F5C4A',
+    'on-quran' => '#FFFFFF',
+    'quran-light' => '#2E8B6E',
+    'quran-paper' => '#FBF7EE',
+    'quran-gold' => '#C9A227',
 ];
 
 return [
@@ -121,6 +128,10 @@ return [
         'headline' => 'BalooDa2-ExtraBold',
         'glyph' => 'BalooDa2-Bold',
         'arabic' => 'NotoNaskhArabic-Bold',
+        // Draws every mark of the Uthmani script the Quran text is written in.
+        'quran' => 'AmiriQuran-Regular',
+        // Bangla body text: Nunito has no Bangla letters.
+        'bangla' => 'BalooDa2-Bold',
     ],
 
 ];

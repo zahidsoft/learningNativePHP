@@ -4,20 +4,17 @@ namespace App\Actions\Learning;
 
 use App\Data\Letter;
 use App\Enums\LearningCategory;
-use Illuminate\Support\Str;
 use Nativephp\Speech\Facades\Speech;
 
 class PlayLearningSound
 {
     /**
-     * Say a letter aloud: its recorded voice clip when one has been added to
-     * public/audio/letters/<category>/, otherwise the device's text-to-speech.
+     * Say a letter aloud: its recorded voice clip when there is one (see
+     * LearningCategory::letterClip()), otherwise the device's text-to-speech.
      */
     public function letter(LearningCategory $category, Letter $letter): void
     {
-        $clip = "audio/letters/{$category->value}/".Str::slug($letter->name).'.mp3';
-
-        if (! $this->clip($clip)) {
+        if (! $this->clip($category->letterClip($letter))) {
             Speech::speak($letter->name, $category->language(), 0.85);
         }
     }

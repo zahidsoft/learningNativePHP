@@ -25,7 +25,7 @@ class SyncLearningAssetsCommand extends Command
 
     protected $signature = 'learn:sync-assets
         {--audio-root= : Folder containing malLatterAtoZsound/ and latterWordAndSound/ (default: public/audio)}
-        {--letters-out= : Destination for renamed letter-name clips (default: public/audio/letters/english)}
+        {--letters-out= : Destination for renamed letter-name clips (default: public/audio/letters/englishLetter)}
         {--words-out= : Destination for renamed word image/audio pairs (default: public/audio/words/english)}
         {--data-out= : Path to write the generated word-gallery data file (default: resources/js/features/learning/data/words.generated.ts)}';
 
@@ -34,7 +34,7 @@ class SyncLearningAssetsCommand extends Command
     public function handle(): int
     {
         $audioRoot = rtrim((string) ($this->option('audio-root') ?: public_path('audio')), '/\\');
-        $lettersOut = rtrim((string) ($this->option('letters-out') ?: public_path('audio/letters/english')), '/\\');
+        $lettersOut = rtrim((string) ($this->option('letters-out') ?: public_path('audio/letters/englishLetter')), '/\\');
         $wordsOut = rtrim((string) ($this->option('words-out') ?: public_path('audio/words/english')), '/\\');
         $dataOut = (string) ($this->option('data-out') ?: resource_path('js/features/learning/data/words.generated.ts'));
 

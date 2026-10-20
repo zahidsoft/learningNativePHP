@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static object|null speak(string $text, ?string $lang = null, ?float $rate = null)
  * @method static bool playFile(string $path)
+ * @method static bool pause()
+ * @method static bool resume()
  * @method static object|null stop()
  *
  * @see \Nativephp\Speech\Speech

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LearningCategory;
 use App\NativeComponents\Letter;
 use Native\Mobile\Testing\Native;
 
@@ -26,17 +27,39 @@ test('it plays the recorded clip of the letter when it opens', function () {
     Native::visit('/learn/english/0')
         ->assertNativeCalled('Speech.PlayFile', fn (array $params) => str_ends_with(
             str_replace('\\', '/', $params['path']),
-            'public/audio/letters/english/ay.mp3',
+            'public/audio/letters/englishLetter/ay.mp3',
         ))
         ->assertNativeNotCalled('Speech.Speak');
+});
+
+test('it plays the recorded clip of an arabic letter', function (int $index, string $clip) {
+    clipsPlay();
+
+    Native::visit("/learn/arabic/{$index}")
+        ->assertNativeCalled('Speech.PlayFile', fn (array $params) => str_ends_with(
+            str_replace('\\', '/', $params['path']),
+            "public/audio/letters/arbiLetter/{$clip}",
+        ))
+        ->assertNativeNotCalled('Speech.Speak');
+})->with([
+    'alif' => [0, '01-alif.mp3'],
+    'haa, numbered after waw in the recordings' => [25, '27-ha.mp3'],
+    'hamza' => [27, '28-hamza.mp3'],
+    'ya' => [28, '29-yaa.mp3'],
+]);
+
+test('every arabic letter has a recording', function () {
+    foreach (LearningCategory::Arabic->letters() as $letter) {
+        expect(public_path(LearningCategory::Arabic->letterClip($letter)))->toBeFile();
+    }
 });
 
 test('it reads the letter with text to speech when it has no recording', function () {
     clipsPlay();
 
-    Native::visit('/learn/arabic/0')
+    Native::visit('/learn/numbers/0')
         ->assertNativeNotCalled('Speech.PlayFile')
-        ->assertNativeCalled('Speech.Speak', fn (array $params) => $params['text'] === 'Alif' && $params['lang'] === 'ar-SA');
+        ->assertNativeCalled('Speech.Speak', fn (array $params) => $params['text'] === 'One' && $params['lang'] === 'en-US');
 });
 
 test('it reads the letter with text to speech when the recording cannot start', function () {

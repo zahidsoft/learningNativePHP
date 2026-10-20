@@ -61,10 +61,28 @@ export async function stop() {
 }
 
 /**
+ * Pause the audio clip currently playing.
+ * @returns {Promise<{ paused: boolean }>}
+ */
+export async function pause() {
+    return bridgeCall('Speech.Pause');
+}
+
+/**
+ * Carry on playing a paused audio clip.
+ * @returns {Promise<{ playing: boolean }>}
+ */
+export async function resume() {
+    return bridgeCall('Speech.Resume');
+}
+
+/**
  * Speech namespace object
  */
 export const speech = {
     speak,
+    pause,
+    resume,
     stop,
 };
 

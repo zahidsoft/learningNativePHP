@@ -51,7 +51,25 @@ enum SpeechFunctions {
     /// One clip at a time: a new tap replaces whatever clip is still playing.
     private static var player: AVAudioPlayer?
 
+    /// Tells PHP when a clip plays to its end (not when it is stopped or replaced).
+    private static let finishAnnouncer = FinishAnnouncer()
+
+    private final class FinishAnnouncer: NSObject, AVAudioPlayerDelegate {
+        func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+            guard flag, let path = player.url?.path else {
+                return
+            }
+
+            DispatchQueue.main.async {
+                LaravelBridge.shared.send?("Nativephp\\Speech\\Events\\AudioFinished", ["path": path])
+            }
+        }
+    }
+
     /// Play a recorded audio clip (voice line, SFX) from the device filesystem.
+    ///
+    /// When the clip plays to its end, an AudioFinished event carrying its
+    /// path is sent to PHP, so a screen can move on to the next clip.
     ///
     /// Parameters:
     ///   - path: string (required) — absolute path of the audio file
@@ -75,6 +93,7 @@ enum SpeechFunctions {
 
             do {
                 let created = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: path))
+                created.delegate = SpeechFunctions.finishAnnouncer
                 SpeechFunctions.player = created
                 let playing = created.play()
 
@@ -84,6 +103,34 @@ enum SpeechFunctions {
 
                 return BridgeResponse.error(code: "PLAYBACK_FAILED", message: error.localizedDescription)
             }
+        }
+    }
+
+    /// Pause the clip currently playing, keeping its position.
+    /// Returns:
+    ///   - paused: boolean — false when nothing was playing
+    class Pause: BridgeFunction {
+        func execute(parameters: [String: Any]) throws -> [String: Any] {
+            guard let current = SpeechFunctions.player, current.isPlaying else {
+                return BridgeResponse.success(data: ["paused": false])
+            }
+
+            current.pause()
+
+            return BridgeResponse.success(data: ["paused": true])
+        }
+    }
+
+    /// Carry on playing a paused clip from where it stopped.
+    /// Returns:
+    ///   - playing: boolean — false when there was no paused clip
+    class Resume: BridgeFunction {
+        func execute(parameters: [String: Any]) throws -> [String: Any] {
+            guard let current = SpeechFunctions.player, !current.isPlaying else {
+                return BridgeResponse.success(data: ["playing": false])
+            }
+
+            return BridgeResponse.success(data: ["playing": current.play()])
         }
     }
 
