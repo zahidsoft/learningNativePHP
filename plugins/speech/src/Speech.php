@@ -9,21 +9,11 @@ class Speech
      */
     public function speak(string $text, ?string $lang = null, ?float $rate = null): ?object
     {
-        if (function_exists('nativephp_call')) {
-            $result = nativephp_call('Speech.Speak', json_encode(array_filter([
-                'text' => $text,
-                'lang' => $lang,
-                'rate' => $rate,
-            ], fn ($v) => $v !== null)));
-
-            if ($result) {
-                $decoded = json_decode($result);
-
-                return $decoded->data ?? null;
-            }
-        }
-
-        return null;
+        return $this->call('Speech.Speak', array_filter([
+            'text' => $text,
+            'lang' => $lang,
+            'rate' => $rate,
+        ], fn ($v) => $v !== null));
     }
 
     /**
@@ -34,35 +24,7 @@ class Speech
      */
     public function playFile(string $path): bool
     {
-        if (! function_exists('nativephp_call')) {
-            return false;
-        }
-
-        $result = nativephp_call('Speech.PlayFile', json_encode(['path' => $path]));
-
-        if (! $result) {
-            return false;
-        }
-
-        return (bool) (json_decode($result)->data->playing ?? false);
-    }
-
-    /**
-     * Call a parameterless bridge function and read one boolean from its data.
-     */
-    private function callForFlag(string $method, string $flag): bool
-    {
-        if (! function_exists('nativephp_call')) {
-            return false;
-        }
-
-        $result = nativephp_call($method, '{}');
-
-        if (! $result) {
-            return false;
-        }
-
-        return (bool) (json_decode($result)->data->{$flag} ?? false);
+        return (bool) ($this->call('Speech.PlayFile', ['path' => $path])->playing ?? false);
     }
 
     /**
@@ -72,7 +34,7 @@ class Speech
      */
     public function pause(): bool
     {
-        return $this->callForFlag('Speech.Pause', 'paused');
+        return (bool) ($this->call('Speech.Pause')->paused ?? false);
     }
 
     /**
@@ -82,7 +44,7 @@ class Speech
      */
     public function resume(): bool
     {
-        return $this->callForFlag('Speech.Resume', 'playing');
+        return (bool) ($this->call('Speech.Resume')->playing ?? false);
     }
 
     /**
@@ -90,16 +52,36 @@ class Speech
      */
     public function stop(): ?object
     {
-        if (function_exists('nativephp_call')) {
-            $result = nativephp_call('Speech.Stop', '{}');
+        return $this->call('Speech.Stop');
+    }
 
-            if ($result) {
-                $decoded = json_decode($result);
-
-                return $decoded->data ?? null;
-            }
+    /**
+     * Call a bridge function and return the data it answered with.
+     *
+     * On the device the bridge answers with the function's data as is, such
+     * as {"playing":true}; some bridges wrap it as {"data":{...}}, so both
+     * shapes are read. Returns null when there is no native bridge.
+     *
+     * @param  array<string, mixed>  $parameters
+     */
+    private function call(string $method, array $parameters = []): ?object
+    {
+        if (! function_exists('nativephp_call')) {
+            return null;
         }
 
-        return null;
+        $result = nativephp_call($method, json_encode((object) $parameters));
+
+        if (! $result) {
+            return null;
+        }
+
+        $decoded = json_decode($result);
+
+        if (! is_object($decoded)) {
+            return null;
+        }
+
+        return is_object($decoded->data ?? null) ? $decoded->data : $decoded;
     }
 }

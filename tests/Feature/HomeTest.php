@@ -42,11 +42,11 @@ test('it opens the quran from the quran card', function () {
         ->assertNavigatedTo('/quran');
 });
 
-test('it continues the quran where the reader stopped', function () {
+test('it shows where the reader stopped and still opens the surah list', function () {
     app(QuranPreferences::class)->setLastRead(112, 3, 'Al-Ikhlaas');
 
     Native::test(Home::class)
-        ->assertSee('পড়া চালিয়ে যান · আয়াত ৩')
-        ->tap('Al-Ikhlaas')
-        ->assertNavigatedTo('/quran/surah/112/3');
+        ->assertSee('শেষ পড়া: সূরা আল-ইখলাস, আয়াত ৩')
+        ->tap('কুরআন পড়ুন')
+        ->assertNavigatedTo('/quran');
 });

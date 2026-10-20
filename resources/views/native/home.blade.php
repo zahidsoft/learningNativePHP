@@ -37,8 +37,9 @@
 
         {{-- Featured Quran card, pulled up so it overlaps the header --}}
         <native:column class="w-full px-4 -mt-[44]">
+            {{-- Always through the surah list, so going back from a surah lands there --}}
             <native:pressable
-                @navigate="$lastRead === null ? '/quran' : '/quran/surah/' . $lastRead['surah'] . '/' . $lastRead['ayah']"
+                @navigate='/quran'
                 :press-scale="0.97"
                 class="relative w-full p-4 rounded-[28] shadow-lg bg-gradient-to-r from-theme-quran to-theme-quran-light"
             >
@@ -49,13 +50,10 @@
                     </native:column>
                     <native:column class="flex-1 gap-1">
                         <native:text font="bangla" class="text-xs text-theme-quran-gold">আল-কুরআন</native:text>
-                        @if ($lastRead === null)
-                            <native:text font="headline" class="text-2xl text-theme-on-quran" :max-lines="1">কুরআন পড়ুন</native:text>
-                            <native:text font="bangla" class="text-xs text-theme-on-quran/80" :max-lines="1">আরবি, বাংলা অর্থ ও তিলাওয়াত</native:text>
-                        @else
-                            <native:text font="headline" class="text-2xl text-theme-on-quran" :max-lines="1">{{ $lastRead['surahName'] }}</native:text>
-                            <native:text font="bangla" class="text-xs text-theme-on-quran/80" :max-lines="1">পড়া চালিয়ে যান · আয়াত {{ Bangla::number($lastRead['ayah']) }}</native:text>
-                        @endif
+                        <native:text font="headline" class="text-2xl text-theme-on-quran" :max-lines="1">কুরআন পড়ুন</native:text>
+                        <native:text font="bangla" class="text-xs text-theme-on-quran/80" :max-lines="1">
+                            {{ $lastRead === null ? 'আরবি, বাংলা অর্থ ও তিলাওয়াত' : 'শেষ পড়া: সূরা ' . Bangla::surahName($lastRead['surah']) . ', আয়াত ' . Bangla::number($lastRead['ayah']) }}
+                        </native:text>
                     </native:column>
                     <native:column class="w-[48] h-[48] rounded-full bg-theme-quran-gold items-center justify-center">
                         <native:icon :ios="Ios::ChevronRight" :android="Android::ChevronRight" :size="26" class="text-theme-on-quran" />

@@ -16,7 +16,7 @@
 
 <native:column class="w-full h-full bg-theme-quran-paper">
     @if ($isPickingJuz)
-        <native:column class="w-full px-4 py-3 gap-2 bg-theme-surface">
+        <native:column native:key="juz-picker" class="w-full px-4 py-3 gap-2 bg-theme-surface">
             <native:text font="bangla" class="text-sm text-theme-on-surface-variant">কোন পারায় যাবেন?</native:text>
             @foreach (array_chunk(range(1, Mushaf::JUZ_COUNT), 6) as $juzRow)
                 <native:row class="w-full gap-2">
@@ -35,10 +35,10 @@
         </native:column>
     @endif
 
-    <native:scroll-view class="w-full flex-1">
+    <native:scroll-view native:key="page" class="w-full flex-1">
         <native:column class="w-full px-4 pt-4 pb-6 gap-4">
             @if ($error !== null)
-                <native:column class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">
+                <native:column native:key="load-error" class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">
                     <native:icon :ios="Ios::WifiSlash" :android="Android::WifiOff" :size="40" class="text-theme-destructive" />
                     <native:text font="bangla" class="text-base text-theme-on-surface text-center">{{ $error }}</native:text>
                     <native:pressable @tap="retry" :press-scale="0.95" class="px-6 py-3 rounded-full bg-theme-quran">
@@ -49,10 +49,10 @@
 
             {{-- A framed page, like a printed muṣḥaf --}}
             @if ($sections !== [])
-                <native:column class="w-full p-4 gap-4 rounded-[20] border-2 border-theme-quran-gold bg-theme-surface">
+                <native:column native:key="page-{{ $page }}" class="w-full p-4 gap-4 rounded-[20] border-2 border-theme-quran-gold bg-theme-surface">
                     @foreach ($sections as $section)
                         @if ($section['startsSurah'])
-                            <native:column class="w-full py-3 gap-1 rounded-[14] items-center bg-theme-quran/10 border border-theme-quran-gold">
+                            <native:column native:key="heading-{{ $section['surah'] }}" class="w-full py-3 gap-1 rounded-[14] items-center bg-theme-quran/10 border border-theme-quran-gold">
                                 <native:text font="quran" class="text-2xl text-theme-quran text-center">{{ $section['surahName'] }}</native:text>
                                 @if (Mushaf::opensWithBismillah($section['surah']))
                                     <native:text font="quran" class="text-xl text-theme-on-surface text-center">{{ Mushaf::BISMILLAH }}</native:text>
@@ -68,7 +68,7 @@
                     @endforeach
                 </native:column>
 
-                <native:text font="bangla" class="w-full text-xs text-theme-on-surface-variant text-center">{{ implode(' · ', $surahNames) }}</native:text>
+                <native:text native:key="surah-names" font="bangla" class="w-full text-xs text-theme-on-surface-variant text-center">{{ implode(' · ', array_map(fn (int $surah): string => 'সূরা ' . Bangla::surahName($surah), $surahNumbers)) }}</native:text>
             @endif
         </native:column>
     </native:scroll-view>

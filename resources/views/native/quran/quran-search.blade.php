@@ -19,14 +19,14 @@
         </native:pressable>
 
         @if ($error !== null)
-            <native:row class="w-full p-4 gap-3 rounded-[18] bg-theme-surface items-center">
+            <native:row native:key="search-error" class="w-full p-4 gap-3 rounded-[18] bg-theme-surface items-center">
                 <native:icon :ios="Ios::WifiSlash" :android="Android::WifiOff" :size="26" class="text-theme-destructive" />
                 <native:text font="bangla" class="flex-1 text-sm text-theme-on-surface">{{ $error }}</native:text>
             </native:row>
         @endif
 
         @if ($searchedFor !== '' && ! $isSearching && $error === null)
-            <native:text font="bangla" class="text-sm text-theme-on-surface-variant">
+            <native:text native:key="result-count" font="bangla" class="text-sm text-theme-on-surface-variant">
                 {{ $total === 0 ? '"' . $searchedFor . '" শব্দটি কোনো আয়াতে পাওয়া যায়নি' : '"' . $searchedFor . '" পাওয়া গেছে ' . Bangla::number($total) . 'টি আয়াতে' }}
             </native:text>
         @endif
@@ -39,7 +39,7 @@
                 class="w-full p-4 gap-2 rounded-[18] bg-theme-surface"
             >
                 <native:row class="w-full items-center gap-2">
-                    <native:text font="headline" class="flex-1 text-sm text-theme-quran">{{ $match['surahName'] }}</native:text>
+                    <native:text font="headline" class="flex-1 text-sm text-theme-quran">সূরা {{ Bangla::surahName($match['surah']) }}</native:text>
                     <native:text font="bangla" class="text-xs text-theme-on-surface-variant">আয়াত {{ Bangla::number($match['numberInSurah']) }}</native:text>
                 </native:row>
                 <native:text font="bangla" class="w-full text-base leading-relaxed text-theme-on-surface">{{ $match['text'] }}</native:text>
@@ -47,11 +47,11 @@
         @endforeach
 
         @if ($isSearching)
-            <native:row class="w-full py-4 justify-center">
+            <native:row native:key="searching" class="w-full py-4 justify-center">
                 <native:activity-indicator :color="theme('quran')" />
             </native:row>
         @elseif ($hasMore)
-            <native:pressable @tap="loadMore" :press-scale="0.97" class="w-full py-3 rounded-[16] bg-theme-quran/10 items-center">
+            <native:pressable native:key="load-more" @tap="loadMore" :press-scale="0.97" class="w-full py-3 rounded-[16] bg-theme-quran/10 items-center">
                 <native:text font="bangla" class="text-sm text-theme-quran">আরও দেখুন</native:text>
             </native:pressable>
         @endif

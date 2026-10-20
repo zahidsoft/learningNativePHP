@@ -19,12 +19,30 @@ beforeEach(function () {
     $this->app->useStoragePath($this->storage);
 
     AsyncTask::fake();
-    Native::fakeBridge()->respondTo('Speech.PlayFile', ['data' => ['playing' => true]]);
+    Native::fakeBridge()->respondTo('Speech.PlayFile', ['playing' => true]);
 });
 
 afterEach(function () {
     File::deleteDirectory($this->storage);
 });
+
+/**
+ * Map every node id in a published tree to its element type.
+ *
+ * @param  array<string, mixed>  $node
+ * @param  array<string, string>  $types
+ * @return array<string, string>
+ */
+function nodeTypes(array $node, array $types = []): array
+{
+    $types[(string) $node['id']] = (string) $node['type'];
+
+    foreach ($node['children'] ?? [] as $child) {
+        $types = nodeTypes($child, $types);
+    }
+
+    return $types;
+}
 
 /**
  * Count the recitation downloads sent to the audio CDN.
@@ -34,12 +52,41 @@ function audioDownloads(): int
     return Http::recorded(fn (Request $request) => str_contains($request->url(), 'cdn.islamic.network'))->count();
 }
 
-test('it shows the arabic text with the default translation', function () {
+test('no node changes its element type while the surah plays', function () {
+    AlQuranFake::serve();
+    $screen = Native::visit('/quran/surah/112');
+    $frames = [nodeTypes($screen->tree())];
+
+    $steps = [
+        fn () => $screen->set('loadingAyah', 6222),
+        fn () => $screen->set('loadingAyah', null)->set('playingAyah', 6222)->set('audioError', 'error'),
+        fn () => $screen->call('togglePause'),
+        fn () => $screen->call('stopAudio'),
+        fn () => $screen->call('toggleBookmark', 0),
+        fn () => $screen->call('markAsRead'),
+    ];
+
+    foreach ($steps as $step) {
+        $step();
+        $frames[] = nodeTypes($screen->tree());
+    }
+
+    // The Android renderer crashes when one node id is drawn as two different elements.
+    foreach (array_slice($frames, 1) as $index => $frame) {
+        $before = $frames[$index];
+        $changed = array_filter(array_keys(array_intersect_key($frame, $before)), fn (string $id): bool => $frame[$id] !== $before[$id]);
+
+        expect($changed)->toBe([], 'Step '.($index + 1).' changed the type of node(s): '.implode(', ', array_map(fn ($id) => "{$id}: {$before[$id]} → {$frame[$id]}", $changed)));
+    }
+});
+
+test('it shows the bangla name with the arabic text and the default translation', function () {
     AlQuranFake::serve();
 
     Native::visit('/quran/surah/1')
         ->assertScreen(SurahReader::class)
-        ->assertNavTitle('Al-Faatiha')
+        ->assertNavTitle('আল-ফাতিহা')
+        ->assertSee('সূরা আল-ফাতিহা')
         ->assertSee('آية 1:1')
         ->assertSee('bn.bengali অনুবাদ 1:1')
         ->assertSee('অনুবাদ: মুহিউদ্দীন খান');
@@ -102,6 +149,27 @@ test('it remembers where the reader is', function () {
     expect(app(QuranPreferences::class)->lastRead())->toBe(['surah' => 1, 'ayah' => 3, 'surahName' => 'Al-Faatiha']);
 });
 
+test('it opens the next and previous surah in place of this one', function () {
+    AlQuranFake::serve();
+
+    Native::visit('/quran/surah/112')
+        ->assertSee('পরের সূরা')
+        ->tap('আল-ফালাক')
+        ->assertReplacedWith('/quran/surah/113');
+
+    Native::visit('/quran/surah/112')
+        ->tap('আল-লাহাব')
+        ->assertReplacedWith('/quran/surah/111');
+});
+
+test('it offers no surah before the first', function () {
+    AlQuranFake::serve();
+
+    Native::visit('/quran/surah/1')
+        ->assertSee('পরের সূরা')
+        ->assertDontSee('আগের সূরা');
+});
+
 test('it saves and unsaves an ayah', function () {
     AlQuranFake::serve();
 
@@ -122,7 +190,7 @@ test('it counts the whole surah in the khatam when marked as read', function () 
 
     Native::visit('/quran/surah/1')
         ->tap('সূরা পড়া শেষ')
-        ->assertSee('এই সূরা খতমের হিসাবে যোগ হয়েছে।');
+        ->assertSee('এই সূরা খতমের হিসাবে যোগ হয়েছে');
 
     expect(Khatam::current()->ayahs()->count())->toBe(7);
 });

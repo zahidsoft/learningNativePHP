@@ -54,7 +54,7 @@ test('it ignores a reciter that is not in the list', function () {
 });
 
 test('it lets the reader hear a reciter before choosing', function () {
-    Native::fakeBridge()->respondTo('Speech.PlayFile', ['data' => ['playing' => true]]);
+    Native::fakeBridge()->respondTo('Speech.PlayFile', ['playing' => true]);
 
     Native::visit('/quran/settings')
         ->call('preview', 'ar.husary')

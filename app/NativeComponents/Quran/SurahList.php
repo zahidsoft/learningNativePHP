@@ -68,7 +68,7 @@ class SurahList extends NativeComponent
         return array_values(array_filter(
             $this->surahs,
             fn (array $surah): bool => (string) $surah['number'] === $number
-                || Str::contains(self::normalize($surah['englishName'].$surah['englishNameTranslation'].$surah['name']), $filter),
+                || Str::contains(self::normalize(Bangla::surahName($surah['number']).$surah['englishName'].$surah['englishNameTranslation'].$surah['name']), $filter),
         ));
     }
 

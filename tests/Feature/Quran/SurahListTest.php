@@ -1,16 +1,19 @@
 <?php
 
 use App\NativeComponents\Quran\SurahList;
+use App\Services\Quran\Bangla;
+use App\Services\Quran\Mushaf;
 use App\Services\Quran\QuranPreferences;
 use Native\Mobile\Testing\Native;
 use Tests\Fixtures\AlQuranFake;
 
-test('it lists the surahs with their arabic names', function () {
+test('it lists the surahs with their bangla, english and arabic names', function () {
     AlQuranFake::serve();
 
     Native::visit('/quran')
         ->assertScreen(SurahList::class)
         ->assertNavTitle('আল-কুরআন')
+        ->assertSee('আল-ফাতিহা')
         ->assertSee('Al-Faatiha')
         ->assertSee('سُورَةُ الإِخۡلَاصِ')
         ->assertSee('মক্কী · ৭ আয়াত');
@@ -23,7 +26,24 @@ test('it filters the surahs by name or number', function (string $filter) {
         ->set('filter', $filter)
         ->assertSee('Al-Ikhlaas')
         ->assertDontSee('Al-Faatiha');
-})->with(['english name' => ['ikhlas'], 'meaning' => ['sincerity'], 'number' => ['112'], 'bangla number' => ['১১২']]);
+})->with([
+    'english name' => ['ikhlas'],
+    'bangla name' => ['ইখলাস'],
+    'meaning' => ['sincerity'],
+    'number' => ['112'],
+    'bangla number' => ['১১২'],
+]);
+
+test('every surah has a bangla name', function () {
+    expect(Bangla::surahName(1))->toBe('আল-ফাতিহা')
+        ->and(Bangla::surahName(36))->toBe('ইয়াসীন')
+        ->and(Bangla::surahName(112))->toBe('আল-ইখলাস')
+        ->and(Bangla::surahName(114))->toBe('আন-নাস');
+
+    foreach (range(1, Mushaf::SURAH_COUNT) as $surah) {
+        expect(Bangla::surahName($surah))->not->toMatch('/^[০-৯]+$/u');
+    }
+});
 
 test('it opens a surah', function () {
     AlQuranFake::serve();

@@ -8,6 +8,7 @@ use App\Actions\Quran\RecordAyahsRead;
 use App\Actions\Quran\ToggleBookmark;
 use App\Concerns\PlaysAyahAudio;
 use App\Models\Bookmark;
+use App\Services\Quran\Mushaf;
 use App\Services\Quran\QuranPreferences;
 use App\Services\Quran\QuranUnavailableException;
 use Native\Mobile\Attributes\Lazy;
@@ -91,6 +92,17 @@ class SurahReader extends NativeComponent
             ->all());
 
         $this->rememberPlace($this->startAyah);
+    }
+
+    /**
+     * Open another surah in place of this one, so going back still leads to
+     * the surah list rather than through every surah read on the way.
+     */
+    public function openSurah(int $number): void
+    {
+        if ($number >= 1 && $number <= Mushaf::SURAH_COUNT) {
+            $this->replace("/quran/surah/{$number}");
+        }
     }
 
     /**

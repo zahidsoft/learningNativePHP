@@ -46,7 +46,7 @@ class MushafPage extends NativeComponent
     {
         return $this->view('quran.mushaf-page', [
             'sections' => $this->surahSections(),
-            'surahNames' => array_values(array_unique(array_column($this->ayahs, 'surahName'))),
+            'surahNumbers' => array_values(array_unique(array_column($this->ayahs, 'surah'))),
             'isFirstPage' => $this->page === 1,
             'isLastPage' => $this->page === Mushaf::PAGE_COUNT,
         ]);

@@ -21,13 +21,13 @@
                 >
                     <native:row class="w-full items-center gap-3">
                         @if ($isChosen)
-                            <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="24" class="text-theme-quran" />
+                            <native:icon native:key="chosen" :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="24" class="text-theme-quran" />
                         @else
-                            <native:icon :ios="Ios::Circle" :android="Android::RadioButtonUnchecked" :size="24" class="text-theme-outline" />
+                            <native:icon native:key="not-chosen" :ios="Ios::Circle" :android="Android::RadioButtonUnchecked" :size="24" class="text-theme-outline" />
                         @endif
-                        <native:text font="bangla" class="flex-1 text-base text-theme-on-surface">{{ $option->translator() }}</native:text>
+                        <native:text native:key="name" font="bangla" class="flex-1 text-base text-theme-on-surface">{{ $option->translator() }}</native:text>
                         @if ($option === Translation::default())
-                            <native:text font="bangla" class="text-xs text-theme-on-surface-variant">ডিফল্ট</native:text>
+                            <native:text native:key="default" font="bangla" class="text-xs text-theme-on-surface-variant">ডিফল্ট</native:text>
                         @endif
                     </native:row>
                 </native:pressable>
@@ -40,7 +40,7 @@
             <native:text font="bangla" class="text-sm text-theme-on-surface-variant">শুনে দেখে পছন্দের ক্বারী বেছে নিন</native:text>
 
             @if ($error !== null)
-                <native:row class="w-full p-4 gap-3 rounded-[18] bg-theme-surface items-center">
+                <native:row native:key="reciters-error" class="w-full p-4 gap-3 rounded-[18] bg-theme-surface items-center">
                     <native:icon :ios="Ios::WifiSlash" :android="Android::WifiOff" :size="24" class="text-theme-destructive" />
                     <native:text font="bangla" class="flex-1 text-sm text-theme-on-surface">{{ $error }}</native:text>
                     <native:pressable @tap="loadReciters" :press-scale="0.95" class="px-4 py-2 rounded-full bg-theme-quran">
@@ -55,24 +55,24 @@
                     native:key="reciter-{{ $option['identifier'] }}"
                     :class="'w-full pl-4 pr-2 py-3 gap-2 rounded-[18] items-center border-2 ' . ($isChosen ? 'bg-theme-quran/10 border-theme-quran' : 'bg-theme-surface border-transparent')"
                 >
-                    <native:pressable @tap="chooseReciter('{{ $option['identifier'] }}')" :press-scale="0.98" class="flex-1">
-                        <native:row class="w-full items-center gap-3">
+                    <native:pressable native:key="choose" @tap="chooseReciter('{{ $option['identifier'] }}')" :press-scale="0.98" class="flex-1">
+                        <native:row native:key="choose-row" class="w-full items-center gap-3">
                             @if ($isChosen)
-                                <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="24" class="text-theme-quran" />
+                                <native:icon native:key="chosen" :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="24" class="text-theme-quran" />
                             @else
-                                <native:icon :ios="Ios::Circle" :android="Android::RadioButtonUnchecked" :size="24" class="text-theme-outline" />
+                                <native:icon native:key="not-chosen" :ios="Ios::Circle" :android="Android::RadioButtonUnchecked" :size="24" class="text-theme-outline" />
                             @endif
-                            <native:column class="flex-1 gap-1">
+                            <native:column native:key="names" class="flex-1 gap-1">
                                 <native:text font="headline" class="text-base text-theme-on-surface">{{ $option['englishName'] }}</native:text>
                                 <native:text font="arabic" class="text-sm text-theme-on-surface-variant">{{ $option['name'] }}</native:text>
                             </native:column>
                         </native:row>
                     </native:pressable>
-                    <native:pressable @tap="preview('{{ $option['identifier'] }}')" :press-scale="0.9" class="w-[42] h-[42] rounded-full bg-theme-quran/10 items-center justify-center" a11y-label="শুনে দেখুন">
+                    <native:pressable native:key="preview" @tap="preview('{{ $option['identifier'] }}')" :press-scale="0.9" class="w-[42] h-[42] rounded-full bg-theme-quran/10 items-center justify-center" a11y-label="শুনে দেখুন">
                         @if ($previewing === $option['identifier'])
-                            <native:activity-indicator size="sm" :color="theme('quran')" />
+                            <native:activity-indicator native:key="preview-loading" size="sm" :color="theme('quran')" />
                         @else
-                            <native:icon :ios="Ios::PlayFill" :android="Android::PlayArrow" :size="20" class="text-theme-quran" />
+                            <native:icon native:key="preview-play" :ios="Ios::PlayFill" :android="Android::PlayArrow" :size="20" class="text-theme-quran" />
                         @endif
                     </native:pressable>
                 </native:row>
@@ -94,7 +94,7 @@
                     </native:pressable>
                 </native:row>
             @empty
-                <native:text font="bangla" class="text-sm text-theme-on-surface-variant">এখনো কোনো তিলাওয়াত ডাউনলোড হয়নি। যে আয়াত শুনবেন, শুধু সেটাই ডাউনলোড হবে।</native:text>
+                <native:text native:key="no-downloads" font="bangla" class="text-sm text-theme-on-surface-variant">এখনো কোনো তিলাওয়াত ডাউনলোড হয়নি। যে আয়াত শুনবেন, শুধু সেটাই ডাউনলোড হবে।</native:text>
             @endforelse
         </native:column>
     </native:column>

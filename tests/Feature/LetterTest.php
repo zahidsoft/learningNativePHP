@@ -9,7 +9,7 @@ use Native\Mobile\Testing\Native;
  */
 function clipsPlay(): void
 {
-    Native::fakeBridge()->respondTo('Speech.PlayFile', ['data' => ['playing' => true]]);
+    Native::fakeBridge()->respondTo('Speech.PlayFile', ['playing' => true]);
 }
 
 test('it shows the letter with its name and example word', function () {

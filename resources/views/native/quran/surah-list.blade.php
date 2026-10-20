@@ -11,6 +11,7 @@
     <native:column class="w-full px-4 pt-4 pb-8 gap-4">
         @if ($lastRead !== null)
             <native:pressable
+                native:key="continue-reading"
                 @navigate="'/quran/surah/' . $lastRead['surah'] . '/' . $lastRead['ayah']"
                 :press-scale="0.97"
                 class="relative w-full p-4 rounded-[24] shadow-md bg-gradient-to-r from-theme-quran to-theme-quran-light"
@@ -22,7 +23,7 @@
                     </native:column>
                     <native:column class="flex-1 gap-1">
                         <native:text font="bangla" class="text-xs text-theme-on-quran/80">পড়া চালিয়ে যান</native:text>
-                        <native:text font="headline" class="text-xl text-theme-on-quran" :max-lines="1">{{ $lastRead['surahName'] }}</native:text>
+                        <native:text font="headline" class="text-xl text-theme-on-quran" :max-lines="1">সূরা {{ Bangla::surahName($lastRead['surah']) }}</native:text>
                         <native:text font="bangla" class="text-xs text-theme-on-quran/80">আয়াত {{ Bangla::number($lastRead['ayah']) }}</native:text>
                     </native:column>
                     <native:icon :ios="Ios::ChevronRight" :android="Android::ChevronRight" :size="24" class="text-theme-on-quran" />
@@ -30,7 +31,7 @@
             </native:pressable>
         @endif
 
-        <native:row class="w-full gap-3">
+        <native:row native:key="shortcuts" class="w-full gap-3">
             @foreach ([
                 ['url' => '/quran/page/' . $lastPage, 'label' => 'মুসহাফ', 'ios' => Ios::BookPagesFill, 'android' => Android::AutoStories],
                 ['url' => '/quran/khatam', 'label' => 'খতম', 'ios' => Ios::ChartPieFill, 'android' => Android::DonutLarge],
@@ -45,10 +46,10 @@
             @endforeach
         </native:row>
 
-        <native:outlined-text-input native:model.debounce.300ms="filter" placeholder="সূরার নাম বা নম্বর" leading-icon="search" font="bangla" />
+        <native:outlined-text-input native:key="filter" native:model.debounce.300ms="filter" placeholder="সূরার নাম বা নম্বর" leading-icon="search" font="bangla" />
 
         @if ($error !== null)
-            <native:column class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">
+            <native:column native:key="load-error" class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">
                 <native:icon :ios="Ios::WifiSlash" :android="Android::WifiOff" :size="40" class="text-theme-destructive" />
                 <native:text font="bangla" class="text-base text-theme-on-surface text-center">{{ $error }}</native:text>
                 <native:pressable @tap="load" :press-scale="0.95" class="px-6 py-3 rounded-full bg-theme-quran">
@@ -57,7 +58,7 @@
             </native:column>
         @endif
 
-        <native:column class="w-full gap-2">
+        <native:column native:key="surahs" class="w-full gap-2">
             @foreach ($shownSurahs as $surah)
                 <native:pressable
                     @navigate="'/quran/surah/' . $surah['number']"
@@ -70,7 +71,10 @@
                             <native:text font="headline" class="text-base text-theme-quran">{{ Bangla::number($surah['number']) }}</native:text>
                         </native:column>
                         <native:column class="flex-1 gap-1">
-                            <native:text font="headline" class="text-base text-theme-on-surface" :max-lines="1">{{ $surah['englishName'] }}</native:text>
+                            <native:row class="w-full items-center gap-2">
+                                <native:text font="headline" class="text-base text-theme-on-surface" :max-lines="1">{{ Bangla::surahName($surah['number']) }}</native:text>
+                                <native:text font="label" class="flex-1 text-xs text-theme-on-surface-variant" :max-lines="1">{{ $surah['englishName'] }}</native:text>
+                            </native:row>
                             <native:text font="bangla" class="text-xs text-theme-on-surface-variant" :max-lines="1">{{ Bangla::revelation($surah['revelationType']) }} · {{ Bangla::number($surah['numberOfAyahs']) }} আয়াত</native:text>
                         </native:column>
                         <native:text font="quran" class="text-2xl text-theme-quran">{{ $surah['name'] }}</native:text>

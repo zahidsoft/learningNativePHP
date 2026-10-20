@@ -12,7 +12,7 @@
                     <native:row class="w-full items-center gap-3">
                         <native:icon :ios="Ios::BookmarkFill" :android="Android::Bookmark" :size="22" class="text-theme-quran-gold" />
                         <native:column class="flex-1 gap-1">
-                            <native:text font="headline" class="text-base text-theme-on-surface">{{ $bookmark->surah_name }}</native:text>
+                            <native:text font="headline" class="text-base text-theme-on-surface">সূরা {{ Bangla::surahName($bookmark->surah) }}</native:text>
                             <native:text font="bangla" class="text-xs text-theme-on-surface-variant">সূরা {{ Bangla::number($bookmark->surah) }} · আয়াত {{ Bangla::number($bookmark->ayah_in_surah) }}</native:text>
                         </native:column>
                     </native:row>
@@ -22,7 +22,7 @@
                 </native:pressable>
             </native:row>
         @empty
-            <native:column class="w-full p-6 gap-3 rounded-[24] bg-theme-surface items-center">
+            <native:column native:key="no-bookmarks" class="w-full p-6 gap-3 rounded-[24] bg-theme-surface items-center">
                 <native:icon :ios="Ios::Bookmark" :android="Android::BookmarkBorder" :size="44" class="text-theme-quran" />
                 <native:text font="bangla" class="text-base text-theme-on-surface text-center">এখনো কোনো আয়াত সংরক্ষণ করা হয়নি</native:text>
                 <native:text font="bangla" class="text-sm text-theme-on-surface-variant text-center">সূরা পড়ার সময় আয়াতের পাশের বুকমার্ক চিহ্নে চাপ দিন</native:text>

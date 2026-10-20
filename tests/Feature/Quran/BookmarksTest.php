@@ -10,13 +10,13 @@ beforeEach(function () {
 test('it lists the saved ayahs', function () {
     Native::visit('/quran/bookmarks')
         ->assertNavTitle('বুকমার্ক')
-        ->assertSee('Al-Ikhlaas')
+        ->assertSee('সূরা আল-ইখলাস')
         ->assertSee('সূরা ১১২ · আয়াত ১');
 });
 
 test('it opens a saved ayah', function () {
     Native::visit('/quran/bookmarks')
-        ->tap('Al-Ikhlaas')
+        ->tap('সূরা আল-ইখলাস')
         ->assertNavigatedTo('/quran/surah/112/1');
 });
 
