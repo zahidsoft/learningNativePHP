@@ -14,7 +14,7 @@ test('it lists every learning category with its card count', function () {
 
     foreach (LearningCategory::cases() as $category) {
         $screen->assertSee($category->title())
-            ->assertSee(count($category->letters()).' cards');
+            ->assertSee('0/'.count($category->letters()).' cards');
     }
 });
 

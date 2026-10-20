@@ -55,6 +55,16 @@ $palette = [
     'quiz-muted' => '#C7C2FF',
     'highlight' => '#FFD23F',
     'on-highlight' => '#2A2F6B',
+
+    // The spelling game: its teal header and the pale page behind the puzzle.
+    'spell' => '#0E9F8E',
+    'on-spell' => '#FFFFFF',
+    // Lighter end of the spelling card gradient.
+    'spell-light' => '#3FD1BC',
+    'spell-soft' => '#E3FAF6',
+
+    // Streak flame on the home header.
+    'streak' => '#FF7A1A',
 ];
 
 return [

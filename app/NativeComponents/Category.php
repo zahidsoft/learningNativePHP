@@ -3,6 +3,8 @@
 namespace App\NativeComponents;
 
 use App\Enums\LearningCategory;
+use App\Enums\ProgressKind;
+use App\Models\LearningProgress;
 use Native\Mobile\Edge\Element;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -26,9 +28,16 @@ class Category extends NativeComponent
         $letters = $category->letters();
         $columns = count($letters) <= self::WIDE_TILE_LIMIT ? 3 : 4;
 
+        $progress = LearningProgress::query()
+            ->for(ProgressKind::Letter, $category->value)
+            ->get()
+            ->keyBy('key');
+
         return $this->view('category', [
             'category' => $category,
             'letterCount' => count($letters),
+            'progress' => $progress,
+            'learnedCount' => $progress->count(),
             'columns' => $columns,
             'tileRows' => array_chunk($letters, $columns, preserve_keys: true),
         ]);

@@ -9,7 +9,7 @@ class MakeQuizQuestion
     /**
      * Pick a random letter from every category and three wrong names for it.
      *
-     * @return array{character: string, font: string, answer: string, options: list<string>}
+     * @return array{category: string, character: string, font: string, answer: string, options: list<string>}
      */
     public function handle(): array
     {
@@ -27,6 +27,7 @@ class MakeQuizQuestion
         shuffle($options);
 
         return [
+            'category' => $picked['category']->value,
             'character' => $answer->character,
             'font' => $picked['category']->font(),
             'answer' => $answer->name,

@@ -10,7 +10,8 @@
             <native:row class="w-full items-center gap-3">
                 <native:column class="flex-1 gap-1">
                     <native:text font="headline" class="text-2xl text-white">{{ $letterCount }} cards to learn</native:text>
-                    <native:text class="text-sm text-white/80">Tap a card to see it big and hear it</native:text>
+                    <native:text class="text-sm text-white/80">{{ $learnedCount }} learned · tap a card to hear it</native:text>
+                    <native:progress-bar :value="$learnedCount / $letterCount" color="#FFFFFF" class="w-full h-[6] mt-1 rounded-full" />
                 </native:column>
                 <native:column class="w-[56] h-[56] rounded-[18] bg-white/20 items-center justify-center">
                     <native:icon :ios="Ios::BookFill" :android="Android::MenuBook" :size="30" color="#FFFFFF" />
@@ -37,12 +38,19 @@
             @foreach ($tileRows as $row)
                 <native:row class="w-full gap-3">
                     @foreach ($row as $index => $letter)
+                        @php($letterProgress = $progress->get($letter->character))
                         <native:pressable
                             @navigate="'/learn/' . $category->value . '/' . $index"
                             :press-scale="0.94"
                             native:key="tile-{{ $category->value }}-{{ $index }}"
-                            class="flex-1 px-1 py-3 gap-1 rounded-2xl bg-theme-surface shadow-sm items-center"
+                            class="relative flex-1 px-1 py-3 gap-1 rounded-2xl bg-theme-surface shadow-sm items-center"
                         >
+                            {{-- A star once the letter is answered right in the quiz, a tick once it has been heard --}}
+                            @if ($letterProgress?->isMastered())
+                                <native:icon :ios="Ios::StarFill" :android="Android::Star" :size="16" class="absolute top-[6] right-[6] text-theme-accent" />
+                            @elseif ($letterProgress !== null)
+                                <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="16" class="absolute top-[6] right-[6] text-theme-success" />
+                            @endif
                             <native:text :font="$category->font()" :class="($columns === 3 ? 'text-5xl' : 'text-4xl') . ' text-[' . LearningCategory::tileColor($index) . ']'">{{ $letter->character }}</native:text>
                             <native:text font="label" class="text-xs text-theme-on-surface-variant text-center" :max-lines="1">{{ $letter->name }}</native:text>
                         </native:pressable>

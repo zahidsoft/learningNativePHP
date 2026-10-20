@@ -11,6 +11,7 @@ use Native\Mobile\Testing\TestableComponent;
 function quizOnLetterB(): TestableComponent
 {
     return Native::visit('/quiz')->set('question', [
+        'category' => 'english',
         'character' => 'B',
         'font' => 'glyph',
         'answer' => 'Bee',

@@ -21,6 +21,17 @@
                     <native:text font="label" class="text-sm text-theme-on-primary/80">What shall we learn today?</native:text>
                 </native:column>
             </native:row>
+
+            <native:row class="w-full pt-4 gap-3">
+                <native:row class="px-3 py-2 gap-2 rounded-full bg-white/20 items-center">
+                    <native:icon :ios="Ios::FlameFill" :android="Android::LocalFireDepartment" :size="18" class="text-theme-streak" />
+                    <native:text font="label" class="text-sm text-theme-on-primary" content-transition="numeric">{{ $progress->streakDays }} {{ $progress->streakDays === 1 ? 'day' : 'days' }} streak</native:text>
+                </native:row>
+                <native:row class="px-3 py-2 gap-2 rounded-full bg-white/20 items-center">
+                    <native:icon :ios="Ios::StarFill" :android="Android::Star" :size="18" class="text-theme-highlight" />
+                    <native:text font="label" class="text-sm text-theme-on-primary" content-transition="numeric">{{ $progress->totalStars }} stars</native:text>
+                </native:row>
+            </native:row>
         </native:column>
 
         {{-- Featured card, pulled up so it overlaps the header --}}
@@ -69,10 +80,17 @@
                             :class="'flex-1 pb-[6] rounded-[28] bg-[' . $category->color() . ']/40'"
                         >
                             <native:column :class="'w-full px-3 pt-3 pb-3 gap-3 rounded-[28] items-center bg-[' . $category->cardColor() . ']'">
+                                @php
+                                    $learned = $progress->learnedIn($category->value);
+                                    $total = count($category->letters());
+                                @endphp
                                 <native:row class="w-full justify-end">
-                                    <native:column class="px-2 py-1 rounded-full bg-white/70">
-                                        <native:text font="label" :class="'text-xs text-[' . $category->color() . ']'">{{ count($category->letters()) }} cards</native:text>
-                                    </native:column>
+                                    <native:row class="px-2 py-1 gap-1 rounded-full bg-white/70 items-center">
+                                        @if ($learned >= $total)
+                                            <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="14" :color="$category->color()" />
+                                        @endif
+                                        <native:text font="label" :class="'text-xs text-[' . $category->color() . ']'">{{ $learned }}/{{ $total }} cards</native:text>
+                                    </native:row>
                                 </native:row>
                                 <native:row class="items-center justify-center gap-2">
                                     @foreach (array_slice($category->letters(), 0, 3) as $position => $letter)
@@ -88,6 +106,7 @@
                                         <native:text font="label" class="text-xs text-white/80" :max-lines="1">{{ $category->subtitle() }}</native:text>
                                     </native:column>
                                 </native:row>
+                                <native:progress-bar :value="$learned / $total" :color="$category->color()" class="w-full h-[6] rounded-full" />
                             </native:column>
                         </native:pressable>
                     @endforeach
@@ -108,6 +127,24 @@
                     <native:row class="px-4 py-2 gap-1 rounded-full bg-theme-highlight items-center">
                         <native:icon :ios="Ios::PlayFill" :android="Android::PlayArrow" :size="18" class="text-theme-on-highlight" />
                         <native:text font="headline" class="text-sm text-theme-on-highlight">Play</native:text>
+                    </native:row>
+                </native:row>
+            </native:pressable>
+
+            <native:pressable @navigate='/spell' :press-scale="0.97" class="relative w-full p-4 rounded-[28] shadow-lg bg-gradient-to-r from-theme-spell to-theme-spell-light">
+                <native:circle class="absolute top-[10] right-[60] w-[80] h-[80] bg-white/10" />
+
+                <native:row class="w-full items-center gap-4">
+                    <native:column class="w-[60] h-[60] rounded-[20] bg-theme-surface items-center justify-center">
+                        <native:icon :ios="Ios::Abc" :android="Android::Spellcheck" :size="34" class="text-theme-spell" />
+                    </native:column>
+                    <native:column class="flex-1 gap-1">
+                        <native:text font="headline" class="text-2xl text-theme-on-spell">Spell It</native:text>
+                        <native:text font="label" class="text-xs text-theme-on-spell/80">Build words from pictures · বানান শিখি</native:text>
+                    </native:column>
+                    <native:row class="px-4 py-2 gap-1 rounded-full bg-theme-surface items-center">
+                        <native:icon :ios="Ios::PlayFill" :android="Android::PlayArrow" :size="18" class="text-theme-spell" />
+                        <native:text font="headline" class="text-sm text-theme-spell">Play</native:text>
                     </native:row>
                 </native:row>
             </native:pressable>

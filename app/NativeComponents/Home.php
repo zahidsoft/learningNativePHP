@@ -2,6 +2,7 @@
 
 namespace App\NativeComponents;
 
+use App\Actions\Learning\SummarizeProgress;
 use App\Enums\LearningCategory;
 use Native\Mobile\Edge\Element;
 use Native\Mobile\Edge\NativeComponent;
@@ -12,6 +13,7 @@ class Home extends NativeComponent
     {
         return $this->view('home', [
             'greeting' => $this->greeting(),
+            'progress' => app(SummarizeProgress::class)->handle(),
             'categoryRows' => array_chunk(LearningCategory::cases(), 2),
             'letterOfTheDay' => $this->letterOfTheDay(),
         ]);

@@ -4,8 +4,10 @@ namespace App\NativeComponents;
 
 use App\Actions\Learning\ListLetterWords;
 use App\Actions\Learning\PlayLearningSound;
+use App\Actions\Learning\RecordProgress;
 use App\Data\Letter as LetterData;
 use App\Enums\LearningCategory;
+use App\Enums\ProgressKind;
 use Native\Mobile\Edge\Element;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -58,11 +60,15 @@ class Letter extends NativeComponent
     }
 
     /**
-     * Say the current letter aloud.
+     * Say the current letter aloud and count it as practised.
      */
     public function hear(): void
     {
-        app(PlayLearningSound::class)->letter($this->currentCategory(), $this->currentLetter());
+        $category = $this->currentCategory();
+        $letter = $this->currentLetter();
+
+        app(PlayLearningSound::class)->letter($category, $letter);
+        app(RecordProgress::class)->seen(ProgressKind::Letter, $category->value, $letter->character);
     }
 
     /**

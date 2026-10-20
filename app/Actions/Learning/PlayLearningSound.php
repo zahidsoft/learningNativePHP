@@ -23,6 +23,16 @@ class PlayLearningSound
     }
 
     /**
+     * Say a word aloud: its recording, otherwise the device's text-to-speech.
+     */
+    public function word(string $text, string $publicPath): void
+    {
+        if (! $this->clip($publicPath)) {
+            Speech::speak($text, 'en-US', 0.85);
+        }
+    }
+
+    /**
      * Say the quiz feedback line for a right or wrong answer.
      */
     public function quizFeedback(bool $isCorrect): void
