@@ -63,11 +63,20 @@ trait PlaysAyahAudio
     }
 
     /**
+     * Called when the reader asks for a recitation, before it starts.
+     */
+    protected function playbackRequested(): void
+    {
+        //
+    }
+
+    /**
      * Play one ayah and stop after it.
      */
     public function playAyah(int $number): void
     {
         $this->isPlayingThrough = false;
+        $this->playbackRequested();
 
         $this->startAyah($number);
     }
@@ -84,6 +93,7 @@ trait PlaysAyahAudio
         }
 
         $this->isPlayingThrough = true;
+        $this->playbackRequested();
 
         $this->startAyah($from);
     }

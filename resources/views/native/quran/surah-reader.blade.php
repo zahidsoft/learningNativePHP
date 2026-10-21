@@ -17,8 +17,26 @@
     font-name="headline"
 />
 
-<native:scroll-view native:key="surah-reader-screen" class="w-full h-full bg-theme-quran-paper">
-    <native:column class="w-full px-4 pt-4 pb-6 gap-3">
+@php
+    $visibleAyahs = array_filter($ayahs, fn (array $ayah): bool => $ayah['numberInSurah'] >= $startAyah);
+
+    // The follow scroll counts its direct children, so this mirrors the ones
+    // drawn before the first ayah: the top space, the error, the heading and
+    // the "earlier ayahs" button.
+    $childrenBeforeAyahs = 1 + ($error !== null ? 1 : 0) + ($surah !== null ? 1 + ($startAyah > 1 ? 1 : 0) : 0);
+    $followed = array_search($playingAyah ?? $loadingAyah, array_column(array_values($visibleAyahs), 'number'), true);
+@endphp
+
+<native:column native:key="surah-reader-screen" class="w-full h-full bg-theme-quran-paper">
+    {{-- Keeps the ayah being recited in the middle of the screen until the reader scrolls on their own --}}
+    <native:speech-follow-scroll
+        :scroll-to="$followed === false ? -1 : $childrenBeforeAyahs + $followed"
+        :follow-request="$followRequest"
+        @followChange="followChanged"
+        class="w-full flex-1 px-4 gap-3"
+    >
+        <native:column native:key="top-space" class="w-full h-[4]"></native:column>
+
         @if ($error !== null)
             <native:column native:key="load-error" class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">
                 <native:icon :ios="Ios::WifiSlash" :android="Android::WifiOff" :size="40" class="text-theme-destructive" />
@@ -49,8 +67,7 @@
                 </native:pressable>
             @endif
 
-            @foreach ($ayahs as $position => $ayah)
-                @continue($ayah['numberInSurah'] < $startAyah)
+            @foreach ($visibleAyahs as $position => $ayah)
                 @php
                     $isPlaying = $playingAyah === $ayah['number'];
                     $isLoading = $loadingAyah === $ayah['number'];
@@ -129,8 +146,10 @@
                 @endif
             </native:row>
         @endif
-    </native:column>
-</native:scroll-view>
+
+        <native:column native:key="bottom-space" class="w-full h-[12]"></native:column>
+    </native:speech-follow-scroll>
+</native:column>
 
 @if ($surah !== null)
     @php
@@ -144,6 +163,14 @@
     @endphp
     <native:bottom-bar>
         <native:column native:key="player" class="w-full px-4 py-3 gap-2 bg-theme-surface">
+            @if ($isActive && ! $isFollowingAyah)
+                <native:pressable native:key="follow" @tap="followPlayingAyah" :press-scale="0.96" class="self-center px-4 py-2 rounded-full bg-theme-quran/10">
+                    <native:row class="items-center gap-2">
+                        <native:icon :ios="Ios::Scope" :android="Android::MyLocation" :size="18" class="text-theme-quran" />
+                        <native:text font="bangla" class="text-sm text-theme-quran">চলমান আয়াতে যান</native:text>
+                    </native:row>
+                </native:pressable>
+            @endif
             @if ($audioError !== null)
                 <native:text native:key="audio-error" font="bangla" class="text-xs text-theme-destructive">{{ $audioError }}</native:text>
             @endif

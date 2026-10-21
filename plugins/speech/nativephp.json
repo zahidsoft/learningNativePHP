@@ -23,6 +23,17 @@
     ],
     "icon": "resources/icon.png",
     "screenshots": [],
+    "components": [
+        {
+            "type": "speech_follow_scroll",
+            "element": "Nativephp\\Speech\\Elements\\FollowScroll",
+            "blade": "Nativephp\\Speech\\Components\\FollowScroll",
+            "android_renderer": "com.nativephp.plugins.speech.FollowScrollRenderer",
+            "ios_renderer": "SpeechFollowScrollRenderer",
+            "self_closing": false,
+            "element_events": ["followChange"]
+        }
+    ],
     "bridge_functions": [
         {
             "name": "Speech.Speak",

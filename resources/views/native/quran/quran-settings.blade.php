@@ -88,8 +88,8 @@
                         <native:text font="headline" class="text-base text-theme-on-surface">{{ $reciterNames[$identifier] ?? $identifier }}</native:text>
                         <native:text font="bangla" class="text-xs text-theme-on-surface-variant">{{ Bangla::fileSize($bytes) }}</native:text>
                     </native:column>
-                    <native:pressable @tap="deleteDownloads('{{ $identifier }}')" :press-scale="0.9" class="px-3 py-2 rounded-full bg-theme-destructive/10">
-                        <native:text font="bangla" class="text-sm text-theme-destructive">মুছুন</native:text>
+                    <native:pressable @tap="deleteDownloads('{{ $identifier }}')" :press-scale="0.9" class="w-[42] h-[42] rounded-full bg-theme-destructive/10 items-center justify-center" a11y-label="মুছুন">
+                        <native:icon :ios="Ios::Trash" :android="Android::DeleteOutline" :size="22" class="text-theme-destructive" />
                     </native:pressable>
                 </native:row>
             @empty

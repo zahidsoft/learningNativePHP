@@ -52,6 +52,19 @@ class SurahReader extends NativeComponent
 
     public ?string $error = null;
 
+    /**
+     * Whether the screen scrolls along with the ayah being recited. Turned
+     * off once the reader scrolls on their own, so they are never pulled
+     * away from what they are reading.
+     */
+    public bool $isFollowingAyah = true;
+
+    /**
+     * Raised each time the ayah being recited should be brought into view
+     * again, even when it is the same ayah as before.
+     */
+    public int $followRequest = 0;
+
     public function mount(): void
     {
         $this->number = (int) $this->param('number', 1);
@@ -145,6 +158,24 @@ class SurahReader extends NativeComponent
     }
 
     /**
+     * Note whether the screen still follows the recitation: "0" once the
+     * reader scrolls away, "1" once they scroll the ayah back into view.
+     */
+    public function followChanged(string $isFollowing): void
+    {
+        $this->isFollowingAyah = $isFollowing === '1';
+    }
+
+    /**
+     * Bring the ayah being recited back into view and keep following it.
+     */
+    public function followPlayingAyah(): void
+    {
+        $this->isFollowingAyah = true;
+        $this->followRequest++;
+    }
+
+    /**
      * @return list<int>
      */
     protected function playableAyahs(): array
@@ -164,6 +195,11 @@ class SurahReader extends NativeComponent
     protected function playedThroughToEnd(): void
     {
         $this->markAsRead();
+    }
+
+    protected function playbackRequested(): void
+    {
+        $this->followPlayingAyah();
     }
 
     private function rememberPlace(int $ayahInSurah): void

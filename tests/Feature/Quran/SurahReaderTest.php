@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Native\Mobile\AsyncTask;
 use Native\Mobile\Testing\Native;
+use Native\Mobile\Testing\TestableComponent;
 use Nativephp\Speech\Events\AudioFinished;
 use Tests\Fixtures\AlQuranFake;
 
@@ -34,6 +35,126 @@ function audioDownloads(): int
     return Http::recorded(fn (Request $request) => str_contains($request->url(), 'cdn.islamic.network'))->count();
 }
 
+/**
+ * Collect the text drawn by the child the follow scroll brings into view,
+ * or null when it is told to stay where it is.
+ *
+ * @param  array<string, mixed>  $node
+ */
+function followedText(array $node): ?string
+{
+    if ($node['type'] === 'speech_follow_scroll') {
+        $child = $node['children'][$node['props']['scroll_to'] ?? -1] ?? null;
+
+        return $child === null ? null : implode(' | ', nodeTexts($child));
+    }
+
+    foreach ($node['children'] ?? [] as $child) {
+        if (($text = followedText($child)) !== null) {
+            return $text;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param  array<string, mixed>  $node
+ * @return list<string>
+ */
+function nodeTexts(array $node): array
+{
+    $texts = isset($node['props']['text']) ? [(string) $node['props']['text']] : [];
+
+    foreach ($node['children'] ?? [] as $child) {
+        $texts = [...$texts, ...nodeTexts($child)];
+    }
+
+    return $texts;
+}
+
+test('it keeps the ayah being recited in view', function (string $uri, int $ayah, string $text) {
+    AlQuranFake::serve();
+    $screen = Native::visit($uri);
+
+    expect(followedText($screen->tree()))->toBeNull();
+
+    $screen->call('playAyah', $ayah);
+
+    expect(followedText($screen->tree()))->toContain($text);
+
+    $screen->call('stopAudio');
+
+    expect(followedText($screen->tree()))->toBeNull();
+})->with([
+    'from the start' => ['/quran/surah/112', 6223, 'آية 112:2'],
+    'opened part way' => ['/quran/surah/112/3', 6225, 'آية 112:4'],
+]);
+
+/**
+ * Report what the follow scroll tells the device: "0" when the reader
+ * scrolls away from the recited ayah, "1" when they scroll back to it.
+ */
+function readerScrolls(TestableComponent $screen, string $isFollowing): TestableComponent
+{
+    return $screen->fireEvent('followChanged', TestableComponent::EVENT_TEXT_CHANGE, ['text' => $isFollowing]);
+}
+
+test('it stops following when the reader scrolls away but keeps the recited ayah marked', function () {
+    AlQuranFake::serve();
+    $screen = Native::visit('/quran/surah/112')
+        ->call('playThrough')
+        ->assertDontSee('চলমান আয়াতে যান');
+
+    readerScrolls($screen, '0')
+        ->assertSet('isFollowingAyah', false)
+        ->assertSet('playingAyah', 6222)
+        ->assertSee('চলমান আয়াতে যান');
+
+    expect(followedText($screen->tree()))->toContain('অনুবাদ 112:1');
+});
+
+test('it brings the recited ayah back when asked', function () {
+    AlQuranFake::serve();
+    $screen = Native::visit('/quran/surah/112')->call('playThrough');
+    $request = $screen->get('followRequest');
+
+    readerScrolls($screen, '0')
+        ->tap('চলমান আয়াতে যান')
+        ->assertSet('isFollowingAyah', true)
+        ->assertSet('followRequest', $request + 1)
+        ->assertDontSee('চলমান আয়াতে যান');
+});
+
+test('it follows again when the reader scrolls back to the recited ayah', function () {
+    AlQuranFake::serve();
+    $screen = Native::visit('/quran/surah/112')->call('playThrough');
+
+    readerScrolls(readerScrolls($screen, '0'), '1')
+        ->assertSet('isFollowingAyah', true)
+        ->assertDontSee('চলমান আয়াতে যান');
+});
+
+test('a new recitation follows the ayah again', function (string $method, array $arguments) {
+    AlQuranFake::serve();
+    $screen = readerScrolls(Native::visit('/quran/surah/112')->call('playThrough'), '0');
+    $request = $screen->get('followRequest');
+
+    $screen->call($method, ...$arguments)
+        ->assertSet('isFollowingAyah', true)
+        ->assertSet('followRequest', $request + 1);
+})->with([
+    'one ayah' => ['playAyah', [6224]],
+    'the whole surah' => ['playThrough', []],
+]);
+
+test('it offers no way back while nothing is recited', function () {
+    AlQuranFake::serve();
+
+    readerScrolls(Native::visit('/quran/surah/112'), '0')
+        ->assertDontSee('চলমান আয়াতে যান');
+});
+
 test('no node changes its element type while the surah plays', function () {
     AlQuranFake::serve();
     $screen = Native::visit('/quran/surah/112');
@@ -42,6 +163,8 @@ test('no node changes its element type while the surah plays', function () {
         fn () => $screen->set('loadingAyah', 6222),
         fn () => $screen->set('loadingAyah', null)->set('playingAyah', 6222)->set('audioError', 'error'),
         fn () => $screen->call('togglePause'),
+        fn () => readerScrolls($screen, '0'),
+        fn () => $screen->call('followPlayingAyah'),
         fn () => $screen->call('stopAudio'),
         fn () => $screen->call('toggleBookmark', 0),
         fn () => $screen->call('markAsRead'),
