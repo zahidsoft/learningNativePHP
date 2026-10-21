@@ -2,11 +2,10 @@
 @use('App\Icons\Android')
 @use('App\Icons\Ios')
 @use('App\Services\Quran\Bangla')
-@use('Illuminate\Support\Number')
 
 <native:top-bar title="কুরআন সেটিংস" back :background-color="theme('quran')" :text-color="theme('on-quran')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-quran-paper">
+<native:scroll-view native:key="quran-settings-screen" class="w-full h-full bg-theme-quran-paper">
     <native:column class="w-full px-4 pt-4 pb-8 gap-5">
         {{-- Translation --}}
         <native:column class="w-full gap-2">
@@ -87,7 +86,7 @@
                     <native:icon :ios="Ios::ArrowDownCircleFill" :android="Android::DownloadDone" :size="22" class="text-theme-quran" />
                     <native:column class="flex-1 gap-1">
                         <native:text font="headline" class="text-base text-theme-on-surface">{{ $reciterNames[$identifier] ?? $identifier }}</native:text>
-                        <native:text font="bangla" class="text-xs text-theme-on-surface-variant">{{ Number::fileSize($bytes, precision: 1) }}</native:text>
+                        <native:text font="bangla" class="text-xs text-theme-on-surface-variant">{{ Bangla::fileSize($bytes) }}</native:text>
                     </native:column>
                     <native:pressable @tap="deleteDownloads('{{ $identifier }}')" :press-scale="0.9" class="px-3 py-2 rounded-full bg-theme-destructive/10">
                         <native:text font="bangla" class="text-sm text-theme-destructive">মুছুন</native:text>

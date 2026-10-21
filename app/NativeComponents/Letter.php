@@ -13,21 +13,6 @@ use Native\Mobile\Edge\NativeComponent;
 
 class Letter extends NativeComponent
 {
-    /**
-     * The everyday phonics sound(s) each English letter makes, matching the
-     * "<symbol>_isolation.mp3" clips in public/audio/phoneme_audio. C, G and X
-     * list the two sounds a basic phonics curriculum teaches them with.
-     *
-     * @var array<string, list<string>>
-     */
-    private const PHONEMES = [
-        'A' => ['æ'], 'B' => ['b'], 'C' => ['k', 's'], 'D' => ['d'], 'E' => ['e'], 'F' => ['f'],
-        'G' => ['g', 'dʒ'], 'H' => ['h'], 'I' => ['ɪ'], 'J' => ['dʒ'], 'K' => ['k'], 'L' => ['l'],
-        'M' => ['m'], 'N' => ['n'], 'O' => ['ɒ'], 'P' => ['p'], 'Q' => ['k'], 'R' => ['r'],
-        'S' => ['s'], 'T' => ['t'], 'U' => ['ʌ'], 'V' => ['v'], 'W' => ['w'], 'X' => ['x', 'z'],
-        'Y' => ['j'], 'Z' => ['z'],
-    ];
-
     public string $category = LearningCategory::English->value;
 
     public int $index = 0;
@@ -132,15 +117,14 @@ class Letter extends NativeComponent
     }
 
     /**
+     * The phonics sound(s) of the current letter, matching the
+     * "<symbol>_isolation.mp3" clips in public/audio/phoneme_audio.
+     *
      * @return list<string>
      */
     private function phonemes(): array
     {
-        if ($this->currentCategory() !== LearningCategory::English) {
-            return [];
-        }
-
-        return self::PHONEMES[$this->currentLetter()->character] ?? [];
+        return $this->currentLetter()->phonemes;
     }
 
     /**

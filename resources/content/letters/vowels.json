@@ -1,0 +1,16 @@
+{
+    "word": "স্বরবর্ণ",
+    "letters": [
+        {"character":"অ","name":"o"},
+        {"character":"আ","name":"a"},
+        {"character":"ই","name":"i"},
+        {"character":"ঈ","name":"dirgho i"},
+        {"character":"উ","name":"u"},
+        {"character":"ঊ","name":"dirgho u"},
+        {"character":"ঋ","name":"ri"},
+        {"character":"এ","name":"e"},
+        {"character":"ঐ","name":"oi"},
+        {"character":"ও","name":"o"},
+        {"character":"ঔ","name":"ou"}
+    ]
+}

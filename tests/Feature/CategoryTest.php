@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\Learning\RecordProgress;
+use App\Enums\LearningCategory;
+use App\Enums\ProgressKind;
 use App\NativeComponents\Category;
 use Native\Mobile\Testing\Native;
 
@@ -35,4 +38,17 @@ test('it falls back to english letters for an unknown category', function () {
     Native::visit('/learn/klingon')
         ->assertNavTitle('English Letters')
         ->assertSee('26 cards to learn');
+});
+
+test('no node changes its element type as letters are heard and mastered', function () {
+    $screen = Native::visit('/learn/english');
+
+    expectStableNodeTypes($screen, [
+        fn () => $screen->tap('Start from the first')->follow()->goBack(),
+        function () use ($screen) {
+            app(RecordProgress::class)->answered(ProgressKind::Letter, LearningCategory::English->value, 'A', isCorrect: true);
+
+            return $screen->tap('Start from the first')->follow()->goBack();
+        },
+    ]);
 });

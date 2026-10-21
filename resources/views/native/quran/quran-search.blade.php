@@ -4,7 +4,7 @@
 
 <native:top-bar title="আয়াত খুঁজুন" :subtitle="'অনুবাদ: ' . $translation->translator()" back :background-color="theme('quran')" :text-color="theme('on-quran')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-quran-paper">
+<native:scroll-view native:key="quran-search-screen" class="w-full h-full bg-theme-quran-paper">
     <native:column class="w-full px-4 pt-4 pb-8 gap-3">
         <native:outlined-text-input
             native:model="query"

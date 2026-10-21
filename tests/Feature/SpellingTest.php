@@ -118,3 +118,17 @@ test('a puzzle avoids the words just played', function () {
 
     expect($second['word'])->not->toBe($first['word']);
 });
+
+test('no node changes its element type while a word is spelled', function () {
+    $screen = spellingCat();
+
+    expectStableNodeTypes($screen, [
+        fn () => $screen->call('pickTile', 1),
+        fn () => $screen->call('pickTile', 4),
+        fn () => $screen->call('pickTile', 3),
+        fn () => $screen->call('pickTile', 2),
+        fn () => $screen->call('pickTile', 0),
+        fn () => $screen->call('nextWord'),
+        fn () => $screen->call('chooseLevel', SpellingLevel::Hard->value),
+    ]);
+});

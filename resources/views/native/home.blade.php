@@ -5,7 +5,7 @@
 
 <native:top-bar title="Learn & Grow" subtitle="Small Steps, Big Future" :background-color="theme('primary')" :text-color="theme('on-primary')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-background">
+<native:scroll-view native:key="home-screen" class="w-full h-full bg-theme-background">
     <native:column class="w-full pb-8">
         {{-- Header: gradient band with soft bubbles behind the greeting --}}
         <native:column class="relative w-full px-5 pt-3 pb-[64] rounded-b-[40] bg-gradient-to-b from-theme-primary to-theme-primary-light">
@@ -89,9 +89,9 @@
                                 <native:row class="w-full justify-end">
                                     <native:row class="px-2 py-1 gap-1 rounded-full bg-white/70 items-center">
                                         @if ($learned >= $total)
-                                            <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="14" :color="$category->color()" />
+                                            <native:icon native:key="complete" :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="14" :color="$category->color()" />
                                         @endif
-                                        <native:text font="label" :class="'text-xs text-[' . $category->color() . ']'">{{ $learned }}/{{ $total }} cards</native:text>
+                                        <native:text native:key="count" font="label" :class="'text-xs text-[' . $category->color() . ']'">{{ $learned }}/{{ $total }} cards</native:text>
                                     </native:row>
                                 </native:row>
                                 <native:row class="items-center justify-center gap-2">

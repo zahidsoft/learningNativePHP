@@ -14,7 +14,7 @@
     <native:top-bar-action id="juz" label="পারা বাছুন" @tap="toggleJuzPicker" :ios-icon="Ios::ListBullet" :android-icon="Android::List" />
 </native:top-bar>
 
-<native:column class="w-full h-full bg-theme-quran-paper">
+<native:column native:key="mushaf-page-screen" class="w-full h-full bg-theme-quran-paper">
     @if ($isPickingJuz)
         <native:column native:key="juz-picker" class="w-full px-4 py-3 gap-2 bg-theme-surface">
             <native:text font="bangla" class="text-sm text-theme-on-surface-variant">কোন পারায় যাবেন?</native:text>

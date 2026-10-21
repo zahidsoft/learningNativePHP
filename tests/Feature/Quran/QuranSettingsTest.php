@@ -2,6 +2,7 @@
 
 use App\Enums\Translation;
 use App\Services\Quran\AyahAudio;
+use App\Services\Quran\Bangla;
 use App\Services\Quran\QuranPreferences;
 use Illuminate\Support\Facades\File;
 use Native\Mobile\AsyncTask;
@@ -64,11 +65,21 @@ test('it lets the reader hear a reciter before choosing', function () {
     expect(app(QuranPreferences::class)->reciter())->toBe('ar.alafasy');
 });
 
+test('it writes file sizes in bangla without the intl extension', function (int $bytes, string $size) {
+    expect(Bangla::fileSize($bytes))->toBe($size);
+})->with([
+    'bytes' => [512, '৫১২ B'],
+    'kilobytes' => [1536, '১.৫ KB'],
+    'whole megabytes' => [3 * 1024 * 1024, '৩ MB'],
+    'megabytes' => [(int) (12.5 * 1024 * 1024), '১২.৫ MB'],
+]);
+
 test('it shows and deletes the downloaded recitations of a reciter', function () {
     app(AyahAudio::class)->download('ar.husary', 1);
 
     Native::visit('/quran/settings')
         ->assertSee('ডাউনলোড করা তিলাওয়াত')
+        ->assertSee('১৯ B')
         ->call('deleteDownloads', 'ar.husary')
         ->assertSee('এখনো কোনো তিলাওয়াত ডাউনলোড হয়নি।');
 

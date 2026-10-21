@@ -1,0 +1,24 @@
+{
+    "letters": [
+        {"character":"1","name":"One","word":"১"},
+        {"character":"2","name":"Two","word":"২"},
+        {"character":"3","name":"Three","word":"৩"},
+        {"character":"4","name":"Four","word":"৪"},
+        {"character":"5","name":"Five","word":"৫"},
+        {"character":"6","name":"Six","word":"৬"},
+        {"character":"7","name":"Seven","word":"৭"},
+        {"character":"8","name":"Eight","word":"৮"},
+        {"character":"9","name":"Nine","word":"৯"},
+        {"character":"10","name":"Ten","word":"১০"},
+        {"character":"11","name":"Eleven","word":"১১"},
+        {"character":"12","name":"Twelve","word":"১২"},
+        {"character":"13","name":"Thirteen","word":"১৩"},
+        {"character":"14","name":"Fourteen","word":"১৪"},
+        {"character":"15","name":"Fifteen","word":"১৫"},
+        {"character":"16","name":"Sixteen","word":"১৬"},
+        {"character":"17","name":"Seventeen","word":"১৭"},
+        {"character":"18","name":"Eighteen","word":"১৮"},
+        {"character":"19","name":"Nineteen","word":"১৯"},
+        {"character":"20","name":"Twenty","word":"২০"}
+    ]
+}

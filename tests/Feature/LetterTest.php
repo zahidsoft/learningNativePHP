@@ -142,3 +142,13 @@ test('it shows counting dots only for numbers', function () {
 
     Native::visit('/learn/english/4')->assertDontSee('Count the dots');
 });
+
+test('no node changes its element type while stepping through a category', function (LearningCategory $category) {
+    clipsPlay();
+    $screen = Native::visit("/learn/{$category->value}/0");
+
+    expectStableNodeTypes($screen, array_map(
+        fn () => fn () => $screen->call('next'),
+        $category->letters(),
+    ));
+})->with(LearningCategory::cases());

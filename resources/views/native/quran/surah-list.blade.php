@@ -7,7 +7,7 @@
     <native:top-bar-action id="settings" label="সেটিংস" url="/quran/settings" :ios-icon="Ios::Gearshape" :android-icon="Android::Settings" />
 </native:top-bar>
 
-<native:scroll-view class="w-full h-full bg-theme-quran-paper">
+<native:scroll-view native:key="surah-list-screen" class="w-full h-full bg-theme-quran-paper">
     <native:column class="w-full px-4 pt-4 pb-8 gap-4">
         @if ($lastRead !== null)
             <native:pressable

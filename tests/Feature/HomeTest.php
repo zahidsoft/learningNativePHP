@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\Learning\RecordProgress;
 use App\Enums\LearningCategory;
+use App\Enums\ProgressKind;
 use App\NativeComponents\Home;
 use App\Services\Quran\QuranPreferences;
 use Native\Mobile\Testing\Native;
@@ -49,4 +51,18 @@ test('it shows where the reader stopped and still opens the surah list', functio
         ->assertSee('শেষ পড়া: সূরা আল-ইখলাস, আয়াত ৩')
         ->tap('কুরআন পড়ুন')
         ->assertNavigatedTo('/quran');
+});
+
+test('no node changes its element type when a category is completed', function () {
+    $screen = Native::visit('/');
+
+    expectStableNodeTypes($screen, [
+        function () use ($screen) {
+            foreach (LearningCategory::English->letters() as $letter) {
+                app(RecordProgress::class)->seen(ProgressKind::Letter, LearningCategory::English->value, $letter->character);
+            }
+
+            return $screen->tap('Quiz Time')->follow()->goBack();
+        },
+    ]);
 });

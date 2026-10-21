@@ -4,7 +4,7 @@
 
 <native:top-bar :title="$category->title()" :subtitle="$category->subtitle()" back :background-color="$category->color()" text-color="#FFFFFF" font-name="headline" />
 
-<native:scroll-view :class="'w-full h-full bg-[' . $category->softColor() . ']'">
+<native:scroll-view native:key="category-screen" :class="'w-full h-full bg-[' . $category->softColor() . ']'">
     <native:column class="w-full pb-8">
         <native:column :class="'w-full px-5 pt-2 pb-6 gap-4 rounded-b-[36] bg-[' . $category->color() . ']'">
             <native:row class="w-full items-center gap-3">
@@ -47,12 +47,12 @@
                         >
                             {{-- A star once the letter is answered right in the quiz, a tick once it has been heard --}}
                             @if ($letterProgress?->isMastered())
-                                <native:icon :ios="Ios::StarFill" :android="Android::Star" :size="16" class="absolute top-[6] right-[6] text-theme-accent" />
+                                <native:icon native:key="mastered" :ios="Ios::StarFill" :android="Android::Star" :size="16" class="absolute top-[6] right-[6] text-theme-accent" />
                             @elseif ($letterProgress !== null)
-                                <native:icon :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="16" class="absolute top-[6] right-[6] text-theme-success" />
+                                <native:icon native:key="heard" :ios="Ios::CheckmarkCircleFill" :android="Android::CheckCircle" :size="16" class="absolute top-[6] right-[6] text-theme-success" />
                             @endif
-                            <native:text :font="$category->font()" :class="($columns === 3 ? 'text-5xl' : 'text-4xl') . ' text-[' . LearningCategory::tileColor($index) . ']'">{{ $letter->character }}</native:text>
-                            <native:text font="label" class="text-xs text-theme-on-surface-variant text-center" :max-lines="1">{{ $letter->name }}</native:text>
+                            <native:text native:key="character" :font="$category->font()" :class="($columns === 3 ? 'text-5xl' : 'text-4xl') . ' text-[' . LearningCategory::tileColor($index) . ']'">{{ $letter->character }}</native:text>
+                            <native:text native:key="name" font="label" class="text-xs text-theme-on-surface-variant text-center" :max-lines="1">{{ $letter->name }}</native:text>
                         </native:pressable>
                     @endforeach
 

@@ -4,7 +4,7 @@
 
 <native:top-bar title="খতমের হিসাব" back :background-color="theme('quran')" :text-color="theme('on-quran')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-quran-paper">
+<native:scroll-view native:key="khatam-progress-screen" class="w-full h-full bg-theme-quran-paper">
     <native:column class="w-full px-4 pt-4 pb-8 gap-4">
         @if ($error !== null)
             <native:column native:key="load-error" class="w-full p-5 gap-3 rounded-[24] bg-theme-surface items-center">

@@ -3,9 +3,9 @@
 
 <native:top-bar title="Quiz Time" :subtitle="'Score ' . $score" back :background-color="theme('quiz')" :text-color="theme('on-quiz')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-quiz">
+<native:scroll-view native:key="quiz-screen" class="w-full h-full bg-theme-quiz">
     @if ($isFinished)
-        <native:column class="w-full px-6 pt-10 pb-8 gap-6 items-center">
+        <native:column native:key="result" class="w-full px-6 pt-10 pb-8 gap-6 items-center">
             <native:column class="w-[120] h-[120] rounded-full bg-theme-highlight items-center justify-center">
                 <native:icon :ios="Ios::TrophyFill" :android="Android::EmojiEvents" :size="72" class="text-theme-on-highlight" />
             </native:column>
@@ -34,7 +34,7 @@
             </native:column>
         </native:column>
     @else
-        <native:column class="w-full px-5 pt-4 pb-8 gap-5">
+        <native:column native:key="question" class="w-full px-5 pt-4 pb-8 gap-5">
             <native:column class="w-full gap-2">
                 <native:row class="w-full gap-1">
                     @for ($step = 1; $step <= $questionCount; $step++)
@@ -83,14 +83,14 @@
             </native:column>
 
             @if ($picked !== null)
-                <native:row class="w-full p-4 rounded-3xl bg-theme-on-quiz/20 items-center gap-3">
+                <native:row native:key="feedback" class="w-full p-4 rounded-3xl bg-theme-on-quiz/20 items-center gap-3">
                     @if ($isCorrect)
-                        <native:icon :ios="Ios::Checkmark" :android="Android::Check" :size="28" class="text-theme-success" />
+                        <native:icon native:key="correct" :ios="Ios::Checkmark" :android="Android::Check" :size="28" class="text-theme-success" />
                     @else
-                        <native:icon :ios="Ios::Xmark" :android="Android::Close" :size="28" class="text-theme-destructive" />
+                        <native:icon native:key="wrong" :ios="Ios::Xmark" :android="Android::Close" :size="28" class="text-theme-destructive" />
                     @endif
-                    <native:text font="headline" class="flex-1 text-base text-theme-on-quiz">{{ $isCorrect ? 'Correct! Well done' : 'It was ' . $question['answer'] }}</native:text>
-                    <native:pressable @tap="next" :press-scale="0.95" class="px-6 py-3 rounded-2xl bg-theme-highlight">
+                    <native:text native:key="verdict" font="headline" class="flex-1 text-base text-theme-on-quiz">{{ $isCorrect ? 'Correct! Well done' : 'It was ' . $question['answer'] }}</native:text>
+                    <native:pressable native:key="next" @tap="next" :press-scale="0.95" class="px-6 py-3 rounded-2xl bg-theme-highlight">
                         <native:text font="headline" class="text-base text-theme-on-highlight">{{ $questionNumber >= $questionCount ? 'Finish' : 'Next' }}</native:text>
                     </native:pressable>
                 </native:row>

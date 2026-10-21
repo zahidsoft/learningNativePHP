@@ -106,3 +106,15 @@ test('a question offers the right name among four different names', function () 
         ->toContain($question['answer'])
         ->and(array_unique($question['options']))->toHaveCount(4);
 });
+
+test('no node changes its element type through a whole round', function () {
+    $screen = quizOnLetterB();
+    $steps = [fn () => $screen->call('pick', 2)];
+
+    for ($question = 1; $question <= Quiz::QUESTION_COUNT; $question++) {
+        $steps[] = fn () => $screen->call('next');
+        $steps[] = fn () => $screen->call('pick', 0);
+    }
+
+    expectStableNodeTypes($screen, [...$steps, fn () => $screen->call('restart')]);
+});

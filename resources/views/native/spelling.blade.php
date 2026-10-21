@@ -3,7 +3,7 @@
 
 <native:top-bar title="Spell It" :subtitle="$wordsSpelled . ' ' . ($wordsSpelled === 1 ? 'word' : 'words') . ' spelled'" back :background-color="theme('spell')" :text-color="theme('on-spell')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-spell-soft">
+<native:scroll-view native:key="spelling-screen" class="w-full h-full bg-theme-spell-soft">
     <native:column class="w-full px-5 pt-4 pb-8 gap-5">
         <native:row class="w-full gap-2">
             @foreach ($levels as $option)
@@ -47,7 +47,7 @@
         </native:row>
 
         @if ($isComplete)
-            <native:column class="w-full p-5 gap-4 rounded-[28] items-center bg-gradient-to-b from-theme-spell to-theme-spell-light">
+            <native:column native:key="complete" class="w-full p-5 gap-4 rounded-[28] items-center bg-gradient-to-b from-theme-spell to-theme-spell-light">
                 <native:row class="items-center gap-2">
                     @for ($star = 0; $star < ($isPerfect ? 3 : 1); $star++)
                         <native:icon :ios="Ios::StarFill" :android="Android::Star" :size="34" class="text-theme-highlight" />
@@ -63,7 +63,7 @@
                 </native:pressable>
             </native:column>
         @else
-            <native:column class="w-full gap-3">
+            <native:column native:key="tiles" class="w-full gap-3">
                 <native:text font="label" class="text-sm text-theme-on-surface-variant text-center">Tap the letters in order</native:text>
 
                 @foreach ($tileRows as $row)

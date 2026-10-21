@@ -27,24 +27,6 @@ afterEach(function () {
 });
 
 /**
- * Map every node id in a published tree to its element type.
- *
- * @param  array<string, mixed>  $node
- * @param  array<string, string>  $types
- * @return array<string, string>
- */
-function nodeTypes(array $node, array $types = []): array
-{
-    $types[(string) $node['id']] = (string) $node['type'];
-
-    foreach ($node['children'] ?? [] as $child) {
-        $types = nodeTypes($child, $types);
-    }
-
-    return $types;
-}
-
-/**
  * Count the recitation downloads sent to the audio CDN.
  */
 function audioDownloads(): int
@@ -55,29 +37,15 @@ function audioDownloads(): int
 test('no node changes its element type while the surah plays', function () {
     AlQuranFake::serve();
     $screen = Native::visit('/quran/surah/112');
-    $frames = [nodeTypes($screen->tree())];
 
-    $steps = [
+    expectStableNodeTypes($screen, [
         fn () => $screen->set('loadingAyah', 6222),
         fn () => $screen->set('loadingAyah', null)->set('playingAyah', 6222)->set('audioError', 'error'),
         fn () => $screen->call('togglePause'),
         fn () => $screen->call('stopAudio'),
         fn () => $screen->call('toggleBookmark', 0),
         fn () => $screen->call('markAsRead'),
-    ];
-
-    foreach ($steps as $step) {
-        $step();
-        $frames[] = nodeTypes($screen->tree());
-    }
-
-    // The Android renderer crashes when one node id is drawn as two different elements.
-    foreach (array_slice($frames, 1) as $index => $frame) {
-        $before = $frames[$index];
-        $changed = array_filter(array_keys(array_intersect_key($frame, $before)), fn (string $id): bool => $frame[$id] !== $before[$id]);
-
-        expect($changed)->toBe([], 'Step '.($index + 1).' changed the type of node(s): '.implode(', ', array_map(fn ($id) => "{$id}: {$before[$id]} → {$frame[$id]}", $changed)));
-    }
+    ]);
 });
 
 test('it shows the bangla name with the arabic text and the default translation', function () {

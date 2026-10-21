@@ -1,0 +1,30 @@
+{
+    "letters": [
+        {"character":"A","name":"Ay","word":"Apple","phonemes":["æ"]},
+        {"character":"B","name":"Bee","word":"Ball","phonemes":["b"]},
+        {"character":"C","name":"See","word":"Cat","phonemes":["k","s"]},
+        {"character":"D","name":"Dee","word":"Duck","phonemes":["d"]},
+        {"character":"E","name":"Ee","word":"Egg","phonemes":["e"]},
+        {"character":"F","name":"Ef","word":"Fish","phonemes":["f"]},
+        {"character":"G","name":"Jee","word":"Goat","phonemes":["g","dʒ"]},
+        {"character":"H","name":"Aitch","word":"Hat","phonemes":["h"]},
+        {"character":"I","name":"Eye","word":"Ice cream","phonemes":["ɪ"]},
+        {"character":"J","name":"Jay","word":"Jug","phonemes":["dʒ"]},
+        {"character":"K","name":"Kay","word":"Kite","phonemes":["k"]},
+        {"character":"L","name":"El","word":"Lion","phonemes":["l"]},
+        {"character":"M","name":"Em","word":"Moon","phonemes":["m"]},
+        {"character":"N","name":"En","word":"Nest","phonemes":["n"]},
+        {"character":"O","name":"Oh","word":"Owl","phonemes":["ɒ"]},
+        {"character":"P","name":"Pee","word":"Pencil","phonemes":["p"]},
+        {"character":"Q","name":"Queue","word":"Queen","phonemes":["k"]},
+        {"character":"R","name":"Ar","word":"Rain","phonemes":["r"]},
+        {"character":"S","name":"Es","word":"Sun","phonemes":["s"]},
+        {"character":"T","name":"Tee","word":"Tree","phonemes":["t"]},
+        {"character":"U","name":"You","word":"Umbrella","phonemes":["ʌ"]},
+        {"character":"V","name":"Vee","word":"Van","phonemes":["v"]},
+        {"character":"W","name":"Double-u","word":"Water","phonemes":["w"]},
+        {"character":"X","name":"Ex","word":"Box","phonemes":["x","z"]},
+        {"character":"Y","name":"Wy","word":"Yarn","phonemes":["j"]},
+        {"character":"Z","name":"Zed","word":"Zebra","phonemes":["z"]}
+    ]
+}

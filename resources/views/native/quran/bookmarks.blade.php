@@ -4,7 +4,7 @@
 
 <native:top-bar title="বুকমার্ক" :subtitle="Bangla::number($bookmarks->count()) . 'টি আয়াত'" back :background-color="theme('quran')" :text-color="theme('on-quran')" font-name="headline" />
 
-<native:scroll-view class="w-full h-full bg-theme-quran-paper">
+<native:scroll-view native:key="bookmarks-screen" class="w-full h-full bg-theme-quran-paper">
     <native:column class="w-full px-4 pt-4 pb-8 gap-2">
         @forelse ($bookmarks as $bookmark)
             <native:row native:key="bookmark-{{ $bookmark->id }}" class="w-full pl-4 pr-2 py-3 gap-3 rounded-[18] bg-theme-surface items-center">

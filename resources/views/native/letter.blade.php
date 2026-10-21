@@ -4,21 +4,21 @@
 
 <native:top-bar :title="$category->title()" :subtitle="($index + 1) . ' of ' . count($letters)" back :background-color="$category->color()" text-color="#FFFFFF" font-name="headline" />
 
-<native:column :class="'w-full h-full bg-[' . $category->softColor() . ']'">
+<native:column native:key="letter-screen" :class="'w-full h-full bg-[' . $category->softColor() . ']'">
     <native:scroll-view class="w-full flex-1">
         <native:column class="w-full px-5 pt-6 pb-6 gap-5 items-center">
-            <native:pressable @tap="hear" :press-scale="0.95" class="w-[250] h-[250] rounded-[60] bg-theme-surface shadow-lg items-center justify-center">
+            <native:pressable native:key="glyph" @tap="hear" :press-scale="0.95" class="w-[250] h-[250] rounded-[60] bg-theme-surface shadow-lg items-center justify-center">
                 <native:text :font="$category->font()" :class="'text-[150] text-[' . $color . ']'">{{ $letter->character }}</native:text>
             </native:pressable>
 
-            <native:column class="items-center gap-1">
+            <native:column native:key="names" class="items-center gap-1">
                 <native:text font="headline" class="text-4xl text-theme-on-surface text-center">{{ $letter->name }}</native:text>
                 @if ($letter->word !== '')
                     <native:text font="glyph" class="text-lg text-theme-on-surface-variant text-center">{{ $letter->word }}</native:text>
                 @endif
             </native:column>
 
-            <native:pressable @tap="hear" :press-scale="0.95" class="px-8 py-4 rounded-full bg-theme-accent shadow-md">
+            <native:pressable native:key="hear" @tap="hear" :press-scale="0.95" class="px-8 py-4 rounded-full bg-theme-accent shadow-md">
                 <native:row class="items-center gap-3">
                     <native:icon :ios="Ios::SpeakerWave2Fill" :android="Android::VolumeUp" :size="24" class="text-theme-on-accent" />
                     <native:text font="headline" class="text-lg text-theme-on-accent">Tap to hear</native:text>
@@ -26,7 +26,7 @@
             </native:pressable>
 
             @if ($dotCount > 0)
-                <native:column class="w-full p-4 gap-3 rounded-3xl bg-theme-surface items-center">
+                <native:column native:key="dots" class="w-full p-4 gap-3 rounded-3xl bg-theme-surface items-center">
                     <native:text font="label" class="text-sm text-theme-on-surface-variant">Count the dots</native:text>
                     <native:row class="w-full flex-wrap justify-center gap-2">
                         @for ($dot = 0; $dot < $dotCount; $dot++)
@@ -37,7 +37,7 @@
             @endif
 
             @if ($phonemes !== [])
-                <native:column class="w-full p-4 gap-3 rounded-3xl bg-theme-surface items-center">
+                <native:column native:key="phonemes" class="w-full p-4 gap-3 rounded-3xl bg-theme-surface items-center">
                     <native:text font="label" class="text-sm text-theme-on-surface-variant">Letter sound</native:text>
                     <native:row class="items-center justify-center gap-3">
                         @foreach ($phonemes as $position => $symbol)
@@ -53,7 +53,7 @@
             @endif
 
             @if ($words !== [])
-                <native:column class="w-full gap-3">
+                <native:column native:key="words" class="w-full gap-3">
                     <native:text font="label" class="text-sm text-theme-on-surface-variant">Words with {{ $letter->character }}</native:text>
                     <native:scroll-view :horizontal="true" class="w-full">
                         <native:row class="gap-3 pb-2">
@@ -68,7 +68,7 @@
                 </native:column>
             @endif
 
-            <native:column class="w-full gap-3">
+            <native:column native:key="ribbon" class="w-full gap-3">
                 <native:text font="label" class="text-sm text-theme-on-surface-variant">All in {{ $category->title() }}</native:text>
                 <native:scroll-view :horizontal="true" class="w-full">
                     <native:row class="gap-2 pb-2">

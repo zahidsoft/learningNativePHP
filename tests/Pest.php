@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Native\Mobile\Testing\TestableComponent;
 use Tests\TestCase;
 
 /*
@@ -44,7 +45,42 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Map every node id in a published tree to its element type.
+ *
+ * @param  array<string, mixed>  $node
+ * @param  array<string, string>  $types
+ * @return array<string, string>
+ */
+function nodeTypes(array $node, array $types = []): array
 {
-    // ..
+    $types[(string) $node['id']] = (string) $node['type'];
+
+    foreach ($node['children'] ?? [] as $child) {
+        $types = nodeTypes($child, $types);
+    }
+
+    return $types;
+}
+
+/**
+ * Run each step and fail when one draws a node id as a different element
+ * than the frame before it: the Android renderer crashes on that.
+ *
+ * Each step returns the screen whose new frame should be checked.
+ *
+ * @param  list<Closure(): TestableComponent>  $steps
+ */
+function expectStableNodeTypes(TestableComponent $screen, array $steps): void
+{
+    $before = nodeTypes($screen->tree());
+
+    foreach ($steps as $index => $step) {
+        $frame = nodeTypes($step()->tree());
+        $changed = array_filter(array_keys(array_intersect_key($frame, $before)), fn (string $id): bool => $frame[$id] !== $before[$id]);
+
+        expect($changed)->toBe([], 'Step '.($index + 1).' changed the type of node(s): '.implode(', ', array_map(fn ($id) => "{$id}: {$before[$id]} → {$frame[$id]}", $changed)));
+
+        $before = $frame;
+    }
 }

@@ -39,6 +39,28 @@ class Bangla
     }
 
     /**
+     * Write a file size in Bangla, such as ১২.৫ MB.
+     *
+     * Laravel's Number::fileSize() needs the intl extension, which the PHP
+     * runtime on the phone does not have.
+     */
+    public static function fileSize(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $unit = 0;
+        $size = (float) $bytes;
+
+        while ($size >= 1024 && $unit < count($units) - 1) {
+            $size /= 1024;
+            $unit++;
+        }
+
+        $rounded = $unit === 0 ? (string) $bytes : rtrim(rtrim(number_format($size, 1, '.', ''), '0'), '.');
+
+        return self::number($rounded).' '.$units[$unit];
+    }
+
+    /**
      * Get the Bangla name of a surah, such as আল-ফাতিহা for surah 1.
      */
     public static function surahName(int $surah): string
