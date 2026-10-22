@@ -11,8 +11,8 @@ beforeEach(function () {
 
     File::ensureDirectoryExists($words);
 
-    // "apple" and "ant": complete pairs. "axe": image only. "bag": another letter.
-    foreach (['apple.png', 'apple.mp3', 'ant.png', 'ant.mp3', 'axe.png', 'bag.png', 'bag.mp3'] as $file) {
+    // "apple" and "ant": complete pairs (png and jpg). "axe": image only. "bag": another letter.
+    foreach (['apple.png', 'apple.mp3', 'ant.jpg', 'ant.mp3', 'axe.png', 'bag.png', 'bag.mp3'] as $file) {
         File::put("{$words}/{$file}", 'x');
     }
 
@@ -27,7 +27,7 @@ test('it lists the words of a letter that have both a picture and a recording', 
     $words = app(ListLetterWords::class)->handle(LearningCategory::English, new Letter('A', 'Ay'));
 
     expect(array_column($words, 'text'))->toBe(['Ant', 'Apple'])
-        ->and($words[0]->image)->toBe('audio/words/english/ant.png')
+        ->and($words[0]->image)->toBe('audio/words/english/ant.jpg')
         ->and($words[0]->audio)->toBe('audio/words/english/ant.mp3');
 });
 
